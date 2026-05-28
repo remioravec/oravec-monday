@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   useMutation,
   useQuery,
@@ -369,6 +370,55 @@ export function useDeleteTask(projectId: string) {
       qc.invalidateQueries({ queryKey: qk.workload });
     },
   });
+}
+
+// =================== REALTIME ===================
+/**
+ * Abonne le client aux changements Realtime des tâches d'un projet.
+ * À chaque INSERT/UPDATE/DELETE sur `tasks` (filtré par `project_id`) ou sur
+ * `task_assignees`, on invalide les query keys concernées : TanStack Query
+ * refetch alors les vues actives (liste de tâches, sous-tâches dépliées,
+ * assignés, batteries de charge). Aucun `setState` ici → conforme aux règles
+ * de pureté React 19.
+ */
+export function useRealtimeTasks(projectId: string | undefined) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!projectId) return;
+    const client = sb();
+    const channel = client
+      .channel(`tasks-${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+          // On ne connaît pas toujours le parent (DELETE), on invalide large.
+          qc.invalidateQueries({ queryKey: ["subtasks"] });
+          qc.invalidateQueries({ queryKey: qk.workload });
+        },
+      )
+      .on(
+        // task_assignees n'a pas de project_id → pas de filtre possible.
+        // Équipe interne restreinte : on écoute tout puis invalide large.
+        "postgres_changes",
+        { event: "*", schema: "public", table: "task_assignees" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["task-assignees"] });
+          qc.invalidateQueries({ queryKey: qk.workload });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [projectId, qc]);
 }
 
 // =================== TASK ASSIGNEES ===================

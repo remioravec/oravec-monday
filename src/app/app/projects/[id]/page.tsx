@@ -11,6 +11,7 @@ import {
   useTasks,
   useProfiles,
   useCreateTask,
+  useRealtimeTasks,
 } from "@/lib/queries";
 
 export default function ProjectPage({
@@ -24,6 +25,10 @@ export default function ProjectPage({
   const { data: profiles = [] } = useProfiles();
   const createTask = useCreateTask();
   const [newTitle, setNewTitle] = useState("");
+
+  // Sync temps réel : les changements (ajouts, statuts, assignés, suppressions)
+  // faits par d'autres utilisateurs apparaissent sans refresh.
+  useRealtimeTasks(id);
 
   async function handleQuickAdd() {
     if (!newTitle.trim()) return;
