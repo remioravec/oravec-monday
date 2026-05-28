@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter } from "lucide-react";
+import { Filter, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeamBattery } from "@/components/overview/team-battery";
 import { UpcomingTasks } from "@/components/overview/upcoming-tasks";
@@ -72,13 +72,18 @@ export default function OverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Vue d&apos;ensemble
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Suivi global, à venir aujourd&apos;hui et cette semaine, charge par personne.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
+            <LayoutGrid className="size-5" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Vue d&apos;ensemble
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Suivi global, à venir aujourd&apos;hui et cette semaine, charge par personne.
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
