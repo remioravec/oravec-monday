@@ -48,7 +48,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
         render={
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             aria-label="Menu utilisateur"
           />
         }
@@ -69,7 +69,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
             {me.full_name}
             {isAdmin && (
               <ShieldCheck
-                className="size-3.5 shrink-0 text-blue-600"
+                className="size-3.5 shrink-0 text-primary"
                 aria-label="Administrateur"
               />
             )}

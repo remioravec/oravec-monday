@@ -160,7 +160,7 @@ export function OnboardingTour({ onClose }: { onClose: () => void }) {
                 <span
                   key={idx}
                   className={`size-2 rounded-full transition-colors ${
-                    idx === i ? "bg-blue-600 w-6" : idx < i ? "bg-blue-300" : "bg-slate-300"
+                    idx === i ? "bg-primary w-6" : idx < i ? "bg-blue-300" : "bg-slate-300"
                   }`}
                 />
               ))}
@@ -180,7 +180,7 @@ export function OnboardingTour({ onClose }: { onClose: () => void }) {
                   type="button"
                   onClick={finish}
                   disabled={update.isPending}
-                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-lg font-bold text-white shadow-md hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-lg font-bold text-white shadow-md hover:bg-primary/90"
                 >
                   <Check className="size-4" />
                   C&apos;est parti !
@@ -189,7 +189,7 @@ export function OnboardingTour({ onClose }: { onClose: () => void }) {
                 <button
                   type="button"
                   onClick={() => setI((n) => n + 1)}
-                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-lg font-bold text-white shadow-md hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-lg font-bold text-white shadow-md hover:bg-primary/90"
                 >
                   Suivant
                   <ArrowRight className="size-4" />

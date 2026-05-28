@@ -281,7 +281,7 @@ function TabButton({
       className={[
         "relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
         active
-          ? "text-foreground after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-blue-600"
+          ? "text-foreground after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary"
           : "text-muted-foreground hover:text-foreground",
         disabled ? "cursor-not-allowed opacity-50" : "",
       ].join(" ")}
@@ -362,7 +362,7 @@ function GroupSection({
                 if (el) el.indeterminate = someSelected;
               }}
               onChange={(e) => onSelectAll(groupTaskIds, e.target.checked)}
-              className="size-4 shrink-0 cursor-pointer rounded border-input accent-blue-600"
+              className="size-4 shrink-0 cursor-pointer rounded border-input accent-primary"
               aria-label="Tout sélectionner dans le groupe"
               disabled={groupTaskIds.length === 0}
             />
@@ -409,7 +409,7 @@ function GroupSection({
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
-      <div className="grid size-12 place-items-center rounded-full bg-blue-100 text-blue-600">
+      <div className="grid size-12 place-items-center rounded-full bg-accent text-primary">
         <Plus className="size-6" />
       </div>
       <p className="text-sm text-muted-foreground">
@@ -417,7 +417,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </p>
       <Button
         onClick={onAdd}
-        className="bg-blue-600 text-white hover:bg-blue-700"
+        className="bg-primary text-white hover:bg-primary/90"
       >
         <Plus className="size-3.5" />
         Ajouter la première tâche

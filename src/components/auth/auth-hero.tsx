@@ -21,7 +21,7 @@ const FEATURES = [
 
 export function AuthHero() {
   return (
-    <aside className="relative hidden h-full flex-col justify-between overflow-hidden bg-blue-600 p-10 text-white lg:flex">
+    <aside className="relative hidden h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary to-brand-dark p-10 text-white lg:flex">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-30"

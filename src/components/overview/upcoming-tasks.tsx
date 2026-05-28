@@ -58,7 +58,7 @@ export function UpcomingTasks({
       <TasksColumn
         title="Cette semaine"
         icon={<ListChecks className="size-4" />}
-        accent="bg-blue-100 text-blue-700"
+        accent="bg-accent text-accent-foreground"
         tasks={week}
         projectsById={projectsById}
         profileById={profileById}

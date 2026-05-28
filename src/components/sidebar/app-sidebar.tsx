@@ -302,7 +302,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
 function navLinkClass(active: boolean) {
   return [
-    "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
     active
       ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
       : "text-sidebar-foreground hover:bg-sidebar-accent/60",

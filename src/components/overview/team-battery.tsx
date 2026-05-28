@@ -24,16 +24,16 @@ export function TeamBattery({ workload }: { workload: Workload[] }) {
   const pct = totals.total > 0 ? Math.round((totals.fait / totals.total) * 100) : 0;
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 p-6 text-white shadow-md">
+    <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-primary via-primary to-brand-dark p-6 text-white shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
+          <div className="flex items-center gap-2 text-sm font-medium text-white/80">
             <TrendingUp className="size-4" />
             Avancement global de l&apos;équipe
           </div>
           <div className="mt-2 flex items-baseline gap-3">
             <span className="text-5xl font-semibold tabular-nums">{pct}%</span>
-            <span className="text-sm text-blue-100">
+            <span className="text-sm text-white/80">
               {totals.fait} / {totals.total} tâche{totals.total > 1 ? "s" : ""} faites
             </span>
           </div>
@@ -61,7 +61,7 @@ export function TeamBattery({ workload }: { workload: Workload[] }) {
 function Stat({ label, value, dot }: { label: string; value: number; dot: string }) {
   return (
     <div className="rounded-lg bg-white/10 px-3 py-2 text-left ring-1 ring-white/10">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-blue-100">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/80">
         <span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: dot }} />
         {label}
       </div>

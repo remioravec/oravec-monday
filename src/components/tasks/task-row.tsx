@@ -93,7 +93,7 @@ export function TaskRow({
       <div
         className={[
           "hidden border-b last:border-b-0 md:flex md:items-center md:gap-3 md:px-3 md:py-2",
-          selected ? "bg-blue-50/60" : "md:hover:bg-muted/30",
+          selected ? "bg-accent/60" : "md:hover:bg-muted/30",
         ].join(" ")}
       >
         {onToggleSelect && (
@@ -101,7 +101,7 @@ export function TaskRow({
             type="checkbox"
             checked={selected}
             onChange={() => onToggleSelect(task.id)}
-            className="size-4 shrink-0 cursor-pointer rounded border-input accent-blue-600"
+            className="size-4 shrink-0 cursor-pointer rounded border-input accent-primary"
             aria-label="Sélectionner la tâche"
           />
         )}
@@ -187,7 +187,7 @@ export function TaskRow({
       <div
         className={[
           "md:hidden flex flex-col gap-3 border-b p-3 last:border-b-0",
-          selected ? "bg-blue-50/60" : "",
+          selected ? "bg-accent/60" : "",
         ].join(" ")}
       >
         <div className="flex items-start gap-2">
@@ -196,7 +196,7 @@ export function TaskRow({
               type="checkbox"
               checked={selected}
               onChange={() => onToggleSelect(task.id)}
-              className="size-4 shrink-0 cursor-pointer rounded border-input accent-blue-600"
+              className="size-4 shrink-0 cursor-pointer rounded border-input accent-primary"
               aria-label="Sélectionner la tâche"
             />
           )}

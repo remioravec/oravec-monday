@@ -55,7 +55,7 @@ export function BoardToolbar({
     <div className="flex items-center gap-2 overflow-x-auto border-b bg-background px-3 py-2 sm:flex-wrap sm:px-4">
       <Button
         onClick={onAdd}
-        className="h-8 shrink-0 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700"
+        className="h-8 shrink-0 rounded-md bg-primary px-3 text-sm font-medium text-white hover:bg-primary/90"
       >
         <Plus className="size-3.5" />
         <span className="hidden sm:inline">Ajouter élément</span>
@@ -90,7 +90,7 @@ export function BoardToolbar({
           <Filter className="size-3.5" />
           Personne
           {assigneeFilter.length > 0 && (
-            <span className="ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
+            <span className="ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">
               {assigneeFilter.length}
             </span>
           )}

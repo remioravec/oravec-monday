@@ -87,7 +87,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <Button
         type="submit"
         disabled={loading}
-        className="mt-1 h-11 w-full rounded-xl bg-blue-600 text-base font-medium text-white shadow-sm hover:bg-blue-700"
+        className="mt-1 h-11 w-full rounded-xl bg-primary text-base font-medium text-white shadow-sm hover:bg-primary/90"
       >
         {loading ? (
           "…"

@@ -163,7 +163,7 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
               size="sm"
               onClick={saveDescription}
               disabled={savingDesc}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {savingDesc ? "Enregistrement…" : "Enregistrer"}
             </Button>
@@ -217,7 +217,7 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
                 key={a.id}
                 className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 shadow-sm"
               >
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
                   <FileText className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
