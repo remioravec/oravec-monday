@@ -1,7 +1,7 @@
 /* Service worker minimal pour Web Push.
    Stratégies plus avancées (offline cache, etc.) à ajouter plus tard. */
 
-self.addEventListener("install", (e) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -13,7 +13,7 @@ self.addEventListener("push", (event) => {
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
-  } catch (_) {
+  } catch {
     data = { title: "Oravec", body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Oravec";

@@ -117,7 +117,7 @@ export default function OverviewPage() {
 
       <TeamBattery workload={visibleWorkload} />
 
-      <ChildrenOverview children={myChildren} workload={workload} />
+      <ChildrenOverview people={myChildren} workload={workload} />
 
       <UpcomingTasks
         tasks={filteredTasks}

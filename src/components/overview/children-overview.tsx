@@ -8,13 +8,13 @@ import type { Profile } from "@/lib/queries";
 type Workload = Database["public"]["Views"]["person_workload"]["Row"];
 
 export function ChildrenOverview({
-  children,
+  people,
   workload,
 }: {
-  children: Profile[];
+  people: Profile[];
   workload: Workload[];
 }) {
-  if (children.length === 0) return null;
+  if (people.length === 0) return null;
   const workloadById = new Map(workload.map((w) => [w.user_id, w]));
 
   return (
@@ -27,11 +27,11 @@ export function ChildrenOverview({
           Personnes dont je suis responsable
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
-          {children.length}
+          {people.length}
         </span>
       </header>
       <ul className="divide-y">
-        {children.map((c) => {
+        {people.map((c) => {
           const wl = workloadById.get(c.id);
           const total = wl?.total ?? 0;
           const done = wl?.fait ?? 0;
