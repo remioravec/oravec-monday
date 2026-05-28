@@ -16,8 +16,8 @@ Guide de référence pour travailler dans ce dépôt. Prose en français ; ident
 
 - **Phase** : MVP fonctionnel, déployable.
 - **Auth** : Supabase email + mot de passe. Profil créé automatiquement par trigger `handle_new_user` à l'inscription.
-- **Fait** : auth, sidebar dossiers/projets (drag & drop dnd-kit), CRUD dossiers/projets, vue tableau tâches (desktop) + cards (mobile), inline edit titres, status pills, due date inline, multi-assignees popover, sous-tâches (un niveau), vue d'ensemble batteries, paste-modal copier-coller, panel routines.
-- **À venir éventuel** : Supabase Realtime, drag & drop des tâches entre statuts, vue Calendrier, gestion fine des permissions par projet, monétisation, Stripe.
+- **Fait** : auth, sidebar dossiers/projets (drag & drop dnd-kit), CRUD dossiers/projets, vue tableau tâches (desktop) + cards (mobile), inline edit titres, status pills, due date inline, multi-assignees popover, sous-tâches (un niveau), vue d'ensemble batteries, paste-modal copier-coller, panel routines, **sync Realtime sur les tâches** (hook `useRealtimeTasks`).
+- **À venir éventuel** : drag & drop des tâches entre statuts, vue Calendrier, gestion fine des permissions par projet, monétisation, Stripe.
 
 ---
 
@@ -125,7 +125,7 @@ pnpm exec supabase db push --linked  # pousse les migrations vers le cloud
 
 ## 8. Roadmap
 
-- **v1** : drag & drop des tâches entre statuts (kanban view), reorder tâches dans le tableau, sync Realtime sur `tasks`.
+- **v1** : drag & drop des tâches entre statuts (kanban view), reorder tâches dans le tableau. ~~sync Realtime sur `tasks`~~ ✅ livré (`useRealtimeTasks` + migration `20260528000002_realtime_tasks.sql`).
 - **v1.5** : vue Calendrier, permissions par projet (members[]), historique d'activité.
 - **v2** : intégration calendriers externes (Google), notifications push, mobile native.
 
