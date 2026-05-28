@@ -27,10 +27,26 @@ const COLORS = [
 ];
 
 export default function ProfileSettingsPage() {
-  const { data: me, isLoading } = useMyProfile();
+  const { data: me, isLoading, error, refetch } = useMyProfile();
 
-  if (isLoading || !me) {
+  if (isLoading) {
     return <div className="p-6 text-sm text-muted-foreground">Chargement…</div>;
+  }
+  if (error || !me) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+        <div className="rounded-2xl border bg-card p-8 text-center shadow-sm">
+          <p className="text-sm text-muted-foreground">
+            {error
+              ? "Impossible de charger ton profil."
+              : "Profil introuvable."}
+          </p>
+          <Button onClick={() => refetch()} className="mt-4" variant="outline">
+            Réessayer
+          </Button>
+        </div>
+      </div>
+    );
   }
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -42,7 +58,6 @@ export default function ProfileSettingsPage() {
 
 function ProfileForm({ me }: { me: Profile }) {
   const update = useUpdateMyProfile();
-  const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState(me.full_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(me.avatar_url ?? "");
@@ -65,6 +80,7 @@ function ProfileForm({ me }: { me: Profile }) {
     }
     setUploading(true);
     try {
+      const supabase = createClient();
       const ext = file.name.split(".").pop() || "png";
       const path = `${me.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
