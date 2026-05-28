@@ -90,7 +90,7 @@ export function BulkActionBar({
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 sm:px-4">
       <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-slate-700 bg-slate-900 px-2 py-2 text-white shadow-xl sm:gap-2 sm:px-3">
         <div className="flex shrink-0 items-center gap-1.5 pr-1.5">
-          <span className="grid size-7 place-items-center rounded-full bg-blue-600 text-xs font-semibold tabular-nums">
+          <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-semibold tabular-nums">
             {selectedIds.length}
           </span>
           <span className="hidden text-sm sm:inline">sélectionnée{selectedIds.length > 1 ? "s" : ""}</span>

@@ -122,7 +122,7 @@ export function ProjectGantt({
                     className={[
                       "shrink-0 border-r text-center text-[10px]",
                       isToday(d)
-                        ? "bg-blue-50 font-semibold text-blue-700"
+                        ? "bg-accent font-semibold text-accent-foreground"
                         : "text-muted-foreground",
                     ].join(" ")}
                     style={{ width: DAY_PX }}
@@ -158,7 +158,7 @@ export function ProjectGantt({
                         key={d.toISOString()}
                         className={[
                           "absolute top-0 h-full border-r",
-                          isToday(d) ? "bg-blue-50/50" : "",
+                          isToday(d) ? "bg-accent/50" : "",
                         ].join(" ")}
                         style={{
                           left: differenceInDays(d, cursor) * DAY_PX,
@@ -208,7 +208,7 @@ function GanttBar({
         render={
           <button
             type="button"
-            className="absolute top-1/2 flex h-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full px-2 text-[10px] font-medium text-white shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-500"
+            className="absolute top-1/2 flex h-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full px-2 text-[10px] font-medium text-white shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-ring"
             style={{
               left: offset * DAY_PX + 4,
               width: DAY_PX - 8,
@@ -304,7 +304,7 @@ function GanttBar({
                 </Avatar>
                 <span className="flex-1 truncate">{p.full_name}</span>
                 {on && (
-                  <span className="text-[10px] text-blue-600">✓</span>
+                  <span className="text-[10px] text-primary">✓</span>
                 )}
               </DropdownMenuItem>
             );

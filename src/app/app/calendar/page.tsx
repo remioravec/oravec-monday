@@ -92,7 +92,7 @@ export default function CalendarPage() {
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid size-9 place-items-center rounded-xl bg-blue-100 text-blue-700">
+          <span className="grid size-9 place-items-center rounded-xl bg-accent text-accent-foreground">
             <CalendarDays className="size-5" />
           </span>
           <div>
@@ -111,7 +111,7 @@ export default function CalendarPage() {
                 onClick={() => setView(v)}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                   view === v
-                    ? "bg-blue-600 text-white"
+                    ? "bg-primary text-white"
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
@@ -239,7 +239,7 @@ function MonthOrWeekGrid({
                 <span
                   className={[
                     "inline-flex size-6 items-center justify-center rounded-full text-xs font-medium tabular-nums",
-                    today ? "bg-blue-600 text-white" : "",
+                    today ? "bg-primary text-white" : "",
                   ].join(" ")}
                 >
                   {format(d, "d")}
@@ -316,7 +316,7 @@ function DayView({
         <Button
           size="sm"
           onClick={onAdd}
-          className="bg-blue-600 text-white hover:bg-blue-700"
+          className="bg-primary text-white hover:bg-primary/90"
         >
           <Plus className="size-3.5" />
           Ajouter une tâche
@@ -511,7 +511,7 @@ function QuickAddModal({
             <Button
               type="submit"
               disabled={!title.trim() || !projectId}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               <Plus className="size-3.5" />
               Créer

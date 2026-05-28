@@ -163,7 +163,7 @@ export default function OverviewPage() {
                 className={[
                   "rounded-xl text-left transition-all",
                   assigneeFilter === row.user_id
-                    ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-background"
+                    ? "ring-2 ring-ring ring-offset-2 ring-offset-background"
                     : "hover:-translate-y-0.5 hover:shadow-md",
                 ].join(" ")}
               >
@@ -196,7 +196,7 @@ function RoleChip({
       className={[
         "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
         active
-          ? "bg-blue-600 text-white shadow-sm"
+          ? "bg-primary text-white shadow-sm"
           : "text-muted-foreground hover:bg-muted",
       ].join(" ")}
     >

@@ -100,7 +100,7 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
       <div className="flex items-start gap-3">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-xl ${
-            enabled ? "bg-blue-100 text-blue-700" : "bg-muted text-muted-foreground"
+            enabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
           }`}
         >
           {enabled ? <Bell className="size-5" /> : <BellOff className="size-5" />}
@@ -126,7 +126,7 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
             type="button"
             onClick={handleEnable}
             disabled={registering}
-            className="shrink-0 bg-blue-600 text-white hover:bg-blue-700"
+            className="shrink-0 bg-primary text-white hover:bg-primary/90"
           >
             {registering ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -181,7 +181,7 @@ function ToggleRow({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-4 accent-blue-600"
+        className="size-4 accent-primary"
       />
       <span className="text-sm">{label}</span>
     </label>

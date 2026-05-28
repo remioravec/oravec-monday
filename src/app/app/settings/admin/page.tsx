@@ -85,7 +85,7 @@ export default function AdminPage() {
       <section className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-base font-semibold">
-            <Plus className="size-4 text-blue-600" />
+            <Plus className="size-4 text-primary" />
             Ajouter un membre
           </h2>
           <div className="inline-flex rounded-lg border bg-muted/40 p-0.5 text-xs">
@@ -170,7 +170,7 @@ export default function AdminPage() {
             <Button
               type="submit"
               disabled={submitting}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {submitting
                 ? mode === "invite"
@@ -226,7 +226,7 @@ export default function AdminPage() {
                     className={[
                       "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
                       p.role === "admin"
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-accent text-accent-foreground"
                         : "bg-slate-100 text-slate-600",
                     ].join(" ")}
                   >
@@ -284,7 +284,7 @@ function ResponsibilitiesPanel({
   return (
     <section className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
       <h2 className="mb-2 flex items-center gap-2 text-base font-semibold">
-        <UserIcon className="size-4 text-blue-600" />
+        <UserIcon className="size-4 text-primary" />
         Responsabilités
       </h2>
       <p className="mb-4 text-sm text-muted-foreground">
@@ -322,7 +322,7 @@ function ResponsibilitiesPanel({
         <Button
           onClick={add}
           disabled={!parent || !child}
-          className="bg-blue-600 text-white hover:bg-blue-700"
+          className="bg-primary text-white hover:bg-primary/90"
         >
           <Plus className="size-3.5" />
           Lier
@@ -351,7 +351,7 @@ function ResponsibilitiesPanel({
                   return (
                     <span
                       key={cid}
-                      className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700 ring-1 ring-blue-200"
+                      className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground ring-1 ring-blue-200"
                     >
                       {c?.full_name ?? "?"}
                       <button
@@ -363,7 +363,7 @@ function ResponsibilitiesPanel({
                             link: false,
                           })
                         }
-                        className="ml-0.5 text-blue-700 hover:text-blue-900"
+                        className="ml-0.5 text-accent-foreground hover:text-blue-900"
                         aria-label={`Retirer ${c?.full_name ?? ""}`}
                       >
                         ×
@@ -398,7 +398,7 @@ function RoleButton({
       className={[
         "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border text-sm font-medium transition-colors",
         active
-          ? "border-blue-600 bg-blue-50 text-blue-700"
+          ? "border-primary bg-accent text-accent-foreground"
           : "border-input bg-background text-foreground hover:bg-muted",
       ].join(" ")}
     >
