@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -23,6 +22,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
     setLoading(true);
     try {
+      // Client créé ici (et non au render) : le prerender statique de
+      // /login + /signup ne doit pas instancier de client Supabase, sinon
+      // le build casse quand les env vars NEXT_PUBLIC_* sont absentes.
+      const supabase = createClient();
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
