@@ -472,9 +472,13 @@ export function useUpdateTask(projectId: string) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(qk.tasks(projectId), ctx.prev);
     },
-    onSettled: () => {
+    onSettled: (_d, _e, vars) => {
       qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
       qc.invalidateQueries({ queryKey: qk.workload });
+      // Sync Google Agenda si une donnée calendrier a changé (best-effort).
+      if ("due_date" in vars || "time_of_day" in vars || "title" in vars) {
+        void syncTaskToGoogle(vars.id, "push");
+      }
     },
   });
 }
@@ -1070,4 +1074,97 @@ export function useSignOut() {
       if (error) throw error;
     },
   } as UseMutationOptions<void, Error, void>);
+}
+
+// =================== GOOGLE INTEGRATION (client) ===================
+export interface GoogleCalendarEvent {
+  id: string;
+  calendarId: string;
+  title: string;
+  color: string | null;
+  start: string;
+  end: string | null;
+  allDay: boolean;
+  htmlLink: string | null;
+}
+
+export interface GoogleCalendarRow {
+  id: string;
+  google_calendar_id: string;
+  summary: string | null;
+  bg_color: string | null;
+  selected: boolean;
+}
+
+/** Événements Google des agendas sélectionnés, sur une plage (vue calendrier). */
+export function useGoogleEvents(timeMin: string | null, timeMax: string | null) {
+  return useQuery({
+    queryKey: ["google-events", timeMin, timeMax],
+    enabled: !!timeMin && !!timeMax,
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ connected: boolean; events: GoogleCalendarEvent[] }> => {
+      const res = await fetch(
+        `/api/google/events?timeMin=${encodeURIComponent(timeMin!)}&timeMax=${encodeURIComponent(timeMax!)}`,
+      );
+      if (!res.ok) return { connected: false, events: [] };
+      return res.json();
+    },
+  });
+}
+
+/** Liste des agendas Google connectés (+ statut de connexion). */
+export function useGoogleCalendars() {
+  return useQuery({
+    queryKey: ["google-calendars"],
+    queryFn: async (): Promise<{
+      connected: boolean;
+      email: string | null;
+      writeCalendarId: string | null;
+      calendars: GoogleCalendarRow[];
+    }> => {
+      const res = await fetch("/api/google/calendars");
+      if (!res.ok) throw new Error("Chargement des agendas échoué");
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateGoogleCalendars() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      selected?: Record<string, boolean>;
+      writeCalendarId?: string | null;
+    }) => {
+      const res = await fetch("/api/google/calendars", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Mise à jour échouée");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["google-calendars"] });
+      qc.invalidateQueries({ queryKey: ["google-events"] });
+    },
+  });
+}
+
+/**
+ * Pousse/maj/supprime l'événement Google d'une tâche (best-effort : ne lève pas
+ * si l'utilisateur n'a pas connecté Google).
+ */
+export async function syncTaskToGoogle(
+  taskId: string,
+  action: "push" | "pull" | "delete" = "push",
+): Promise<void> {
+  try {
+    await fetch("/api/google/tasks/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId, action }),
+    });
+  } catch {
+    // best-effort
+  }
 }
