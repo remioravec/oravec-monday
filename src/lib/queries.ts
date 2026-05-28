@@ -844,6 +844,39 @@ export function useUploadAttachment(taskId: string) {
   });
 }
 
+/** Enregistre un fichier choisi via le Google Picker comme pièce jointe Drive. */
+export function useAddDriveAttachment(taskId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: {
+      id: string;
+      name: string;
+      url: string;
+      mimeType: string | null;
+      sizeBytes: number | null;
+    }) => {
+      const { data: u } = await sb().auth.getUser();
+      const { error } = await sb()
+        .from("task_attachments")
+        .insert({
+          task_id: taskId,
+          source: "drive",
+          drive_file_id: file.id,
+          external_url: file.url,
+          file_name: file.name,
+          file_size: file.sizeBytes,
+          mime_type: file.mimeType,
+          uploaded_by: u.user?.id ?? null,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["task-attachments", taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks-attachment-counts"] });
+    },
+  });
+}
+
 export function useDeleteAttachment(taskId: string) {
   const qc = useQueryClient();
   return useMutation({
