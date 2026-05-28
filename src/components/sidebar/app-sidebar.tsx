@@ -142,6 +142,18 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
     );
   }
 
+  async function handleNewProject() {
+    const name = window.prompt("Nom du projet ?");
+    if (!name?.trim()) return;
+    await createProject.mutateAsync(
+      { name: name.trim(), folder_id: null, position: projects.length },
+      {
+        onError: (e) => toast.error(e.message),
+        onSuccess: () => toast.success("Projet créé"),
+      },
+    );
+  }
+
   async function handleAddRoutine() {
     const name = window.prompt("Nom de la routine ?");
     if (!name?.trim()) return;
@@ -179,6 +191,38 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Header */}
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <Logo />
+      </div>
+
+      {/* CTA primaire « Nouveau » (style Drive) */}
+      <div className="px-2 pt-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                aria-label="Créer un élément"
+              />
+            }
+          >
+            <Plus className="size-4" />
+            Nouveau
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem onClick={handleNewProject}>
+              <LayoutGrid className="size-3.5" />
+              Projet
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleAddFolder}>
+              <FolderIcon className="size-3.5" />
+              Dossier
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleAddRoutine}>
+              <Repeat className="size-3.5" />
+              Routine
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Nav top-level */}
