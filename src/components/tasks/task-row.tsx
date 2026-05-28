@@ -7,7 +7,11 @@ import {
   Trash2,
   MoreHorizontal,
   Plus,
+  Maximize2,
+  Paperclip,
+  AlignLeft,
 } from "lucide-react";
+import { TaskDetailDrawer } from "@/components/tasks/task-detail-drawer";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,12 +52,19 @@ export function TaskRow({
   task,
   projectId,
   profiles,
+  selected = false,
+  onToggleSelect,
+  attachmentCount = 0,
 }: {
   task: Task;
   projectId: string;
   profiles: Profile[];
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  attachmentCount?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const updateTask = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
   const { data: assigneeIds = [] } = useTaskAssignees(task.id);
@@ -79,7 +90,21 @@ export function TaskRow({
   return (
     <>
       {/* DESKTOP ROW */}
-      <div className="hidden border-b last:border-b-0 md:flex md:items-center md:gap-3 md:px-3 md:py-2 md:hover:bg-muted/30">
+      <div
+        className={[
+          "hidden border-b last:border-b-0 md:flex md:items-center md:gap-3 md:px-3 md:py-2",
+          selected ? "bg-blue-50/60" : "md:hover:bg-muted/30",
+        ].join(" ")}
+      >
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(task.id)}
+            className="size-4 shrink-0 cursor-pointer rounded border-input accent-blue-600"
+            aria-label="Sélectionner la tâche"
+          />
+        )}
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
@@ -117,7 +142,7 @@ export function TaskRow({
           />
         </div>
 
-        <div className="w-36 shrink-0">
+        <div className="flex w-36 shrink-0 flex-col gap-1">
           <Input
             type="date"
             value={dateInputValue(task.due_date)}
@@ -131,20 +156,50 @@ export function TaskRow({
             }
             className="h-7 px-2 text-xs"
           />
+          {task.due_date && (
+            <Input
+              type="time"
+              value={task.time_of_day ? task.time_of_day.slice(0, 5) : ""}
+              onChange={(e) =>
+                updateTask.mutate({
+                  id: task.id,
+                  time_of_day: e.target.value ? e.target.value + ":00" : null,
+                })
+              }
+              className="h-6 px-2 text-[11px]"
+            />
+          )}
         </div>
 
         <RowActions
           onAddSubtask={handleAddSubtask}
+          onOpenDetail={() => setDetailOpen(true)}
           onDelete={() =>
             window.confirm(`Supprimer "${task.title}" ?`) &&
             deleteTask.mutate({ id: task.id })
           }
+          hasDescription={!!task.description}
+          attachmentCount={attachmentCount}
         />
       </div>
 
       {/* MOBILE CARD */}
-      <div className="md:hidden flex flex-col gap-3 border-b p-3 last:border-b-0">
+      <div
+        className={[
+          "md:hidden flex flex-col gap-3 border-b p-3 last:border-b-0",
+          selected ? "bg-blue-50/60" : "",
+        ].join(" ")}
+      >
         <div className="flex items-start gap-2">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(task.id)}
+              className="size-4 shrink-0 cursor-pointer rounded border-input accent-blue-600"
+              aria-label="Sélectionner la tâche"
+            />
+          )}
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
@@ -165,10 +220,13 @@ export function TaskRow({
           />
           <RowActions
             onAddSubtask={handleAddSubtask}
+            onOpenDetail={() => setDetailOpen(true)}
             onDelete={() =>
               window.confirm(`Supprimer "${task.title}" ?`) &&
               deleteTask.mutate({ id: task.id })
             }
+            hasDescription={!!task.description}
+            attachmentCount={attachmentCount}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 pl-7">
@@ -248,6 +306,13 @@ export function TaskRow({
           )}
         </div>
       )}
+
+      <TaskDetailDrawer
+        task={task}
+        projectId={projectId}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </>
   );
 }
@@ -320,31 +385,73 @@ function SubtaskRow({
 
 function RowActions({
   onAddSubtask,
+  onOpenDetail,
   onDelete,
+  hasDescription,
+  attachmentCount = 0,
 }: {
   onAddSubtask: () => void;
+  onOpenDetail: () => void;
   onDelete: () => void;
+  hasDescription?: boolean;
+  attachmentCount?: number;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button size="icon-sm" variant="ghost" aria-label="Plus" />
-        }
+    <div className="flex items-center gap-0.5">
+      {hasDescription && (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="grid size-6 place-items-center text-muted-foreground hover:text-foreground"
+          title="Cette tâche a une description"
+          aria-label="Description"
+        >
+          <AlignLeft className="size-3" />
+        </button>
+      )}
+      {attachmentCount > 0 && (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="inline-flex h-6 items-center gap-0.5 rounded-md px-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          title={`${attachmentCount} pièce(s) jointe(s)`}
+          aria-label={`${attachmentCount} pièces jointes`}
+        >
+          <Paperclip className="size-3" />
+          <span className="text-[10px] tabular-nums">{attachmentCount}</span>
+        </button>
+      )}
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        onClick={onOpenDetail}
+        aria-label="Ouvrir le détail"
+        title="Ouvrir le détail"
       >
-        <MoreHorizontal />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onAddSubtask}>
-          <Plus className="size-3.5" />
-          Ajouter une sous-tâche
-        </DropdownMenuItem>
-        <DropdownMenuItem variant="destructive" onClick={onDelete}>
-          <Trash2 className="size-3.5" />
-          Supprimer
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <Maximize2 className="size-3.5" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button size="icon-sm" variant="ghost" aria-label="Plus" />}
+        >
+          <MoreHorizontal />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onOpenDetail}>
+            <Paperclip className="size-3.5" />
+            Description & pièces jointes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onAddSubtask}>
+            <Plus className="size-3.5" />
+            Ajouter une sous-tâche
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            <Trash2 className="size-3.5" />
+            Supprimer
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 

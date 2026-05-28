@@ -16,6 +16,8 @@ export type Json =
 
 export type TaskStatus = "a_faire" | "en_cours" | "fait";
 export type RoutineFrequency = "daily" | "weekly" | "monthly";
+export type UserRole = "admin" | "member";
+export type HiddenItemKind = "folder" | "project" | "task";
 
 export interface Database {
   public: {
@@ -26,6 +28,8 @@ export interface Database {
           full_name: string | null;
           avatar_url: string | null;
           color: string;
+          role: UserRole;
+          onboarded_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -33,6 +37,8 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           color?: string;
+          role?: UserRole;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -40,6 +46,143 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           color?: string;
+          role?: UserRole;
+          onboarded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      responsibilities: {
+        Row: {
+          parent_id: string;
+          child_id: string;
+          created_at: string;
+        };
+        Insert: {
+          parent_id: string;
+          child_id: string;
+          created_at?: string;
+        };
+        Update: {
+          parent_id?: string;
+          child_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      notification_prefs: {
+        Row: {
+          user_id: string;
+          push_enabled: boolean;
+          notify_on_assigned: boolean;
+          notify_on_status_change: boolean;
+          notify_on_due_today: boolean;
+          quiet_hours_start: string | null;
+          quiet_hours_end: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          push_enabled?: boolean;
+          notify_on_assigned?: boolean;
+          notify_on_status_change?: boolean;
+          notify_on_due_today?: boolean;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          push_enabled?: boolean;
+          notify_on_assigned?: boolean;
+          notify_on_status_change?: boolean;
+          notify_on_due_today?: boolean;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      task_attachments: {
+        Row: {
+          id: string;
+          task_id: string;
+          storage_path: string;
+          file_name: string;
+          file_size: number | null;
+          mime_type: string | null;
+          uploaded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          storage_path: string;
+          file_name: string;
+          file_size?: number | null;
+          mime_type?: string | null;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          task_id?: string;
+          storage_path?: string;
+          file_name?: string;
+          file_size?: number | null;
+          mime_type?: string | null;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      hidden_items: {
+        Row: {
+          user_id: string;
+          item_kind: HiddenItemKind;
+          item_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          item_kind: HiddenItemKind;
+          item_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          item_kind?: HiddenItemKind;
+          item_id?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -72,6 +215,11 @@ export interface Database {
           name: string;
           color: string | null;
           position: number;
+          is_routine: boolean;
+          recurrence_frequency: RoutineFrequency | null;
+          recurrence_days_of_week: number[] | null;
+          recurrence_day_of_month: number | null;
+          recurrence_time_of_day: string | null;
           created_at: string;
         };
         Insert: {
@@ -80,6 +228,11 @@ export interface Database {
           name: string;
           color?: string | null;
           position?: number;
+          is_routine?: boolean;
+          recurrence_frequency?: RoutineFrequency | null;
+          recurrence_days_of_week?: number[] | null;
+          recurrence_day_of_month?: number | null;
+          recurrence_time_of_day?: string | null;
           created_at?: string;
         };
         Update: {
@@ -88,6 +241,11 @@ export interface Database {
           name?: string;
           color?: string | null;
           position?: number;
+          is_routine?: boolean;
+          recurrence_frequency?: RoutineFrequency | null;
+          recurrence_days_of_week?: number[] | null;
+          recurrence_day_of_month?: number | null;
+          recurrence_time_of_day?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -101,6 +259,7 @@ export interface Database {
           description: string | null;
           status: TaskStatus;
           due_date: string | null;
+          time_of_day: string | null;
           position: number;
           created_by: string | null;
           created_at: string;
@@ -114,6 +273,7 @@ export interface Database {
           description?: string | null;
           status?: TaskStatus;
           due_date?: string | null;
+          time_of_day?: string | null;
           position?: number;
           created_by?: string | null;
           created_at?: string;
@@ -127,6 +287,7 @@ export interface Database {
           description?: string | null;
           status?: TaskStatus;
           due_date?: string | null;
+          time_of_day?: string | null;
           position?: number;
           created_by?: string | null;
           created_at?: string;

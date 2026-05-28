@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { AppSidebar } from "./app-sidebar";
+import { Logo } from "@/components/brand/logo";
+import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -18,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh">
       {/* Sidebar desktop (≥768px) */}
-      <aside className="hidden w-64 shrink-0 border-r md:flex">
+      <aside className="hidden w-72 shrink-0 border-r bg-sidebar md:flex">
         <AppSidebar />
       </aside>
 
@@ -43,11 +45,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <AppSidebar onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
-          <div className="text-sm font-semibold">Oravec Monday</div>
+          <Logo />
         </header>
 
         <main className="flex-1 overflow-x-auto">{children}</main>
       </div>
+      <OnboardingHost />
     </div>
   );
 }

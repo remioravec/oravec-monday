@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Workload = Database["public"]["Views"]["person_workload"]["Row"];
@@ -11,7 +11,13 @@ const STATUS_COLORS = {
   fait: "var(--status-done)",
 } as const;
 
-export function WorkloadCard({ row }: { row: Workload }) {
+export function WorkloadCard({
+  row,
+  avatarUrl,
+}: {
+  row: Workload;
+  avatarUrl?: string | null;
+}) {
   const total = Math.max(row.total ?? 0, 0);
   const a = row.a_faire ?? 0;
   const c = row.en_cours ?? 0;
@@ -36,9 +42,10 @@ export function WorkloadCard({ row }: { row: Workload }) {
     .toUpperCase();
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
+    <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-center gap-3">
         <Avatar className="size-10" style={{ backgroundColor: row.color }}>
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
           <AvatarFallback
             className="text-white"
             style={{ backgroundColor: row.color }}

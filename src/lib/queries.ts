@@ -61,6 +61,153 @@ export function useProfiles() {
   });
 }
 
+export function useMyProfile() {
+  const { data: user } = useMe();
+  return useQuery({
+    queryKey: ["my-profile", user?.id ?? null],
+    enabled: !!user?.id,
+    queryFn: async (): Promise<Profile | null> => {
+      if (!user?.id) return null;
+      const { data, error } = await sb()
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateMyProfile() {
+  const qc = useQueryClient();
+  const { data: user } = useMe();
+  return useMutation({
+    mutationFn: async (patch: {
+      full_name?: string;
+      avatar_url?: string | null;
+      color?: string;
+      onboarded_at?: string | null;
+    }) => {
+      if (!user?.id) throw new Error("Non authentifié");
+      const { error } = await sb()
+        .from("profiles")
+        .update(patch)
+        .eq("id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.profiles });
+      qc.invalidateQueries({ queryKey: ["my-profile"] });
+      qc.invalidateQueries({ queryKey: qk.workload });
+    },
+  });
+}
+
+// =================== RESPONSIBILITIES (parent/child) ===================
+export function useResponsibilities() {
+  return useQuery({
+    queryKey: ["responsibilities"],
+    queryFn: async (): Promise<{ parent_id: string; child_id: string }[]> => {
+      const { data, error } = await sb()
+        .from("responsibilities")
+        .select("parent_id,child_id");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useToggleResponsibility() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      parentId,
+      childId,
+      link,
+    }: {
+      parentId: string;
+      childId: string;
+      link: boolean;
+    }) => {
+      if (link) {
+        const { error } = await sb()
+          .from("responsibilities")
+          .insert({ parent_id: parentId, child_id: childId });
+        if (error && error.code !== "23505") throw error;
+      } else {
+        const { error } = await sb()
+          .from("responsibilities")
+          .delete()
+          .eq("parent_id", parentId)
+          .eq("child_id", childId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["responsibilities"] }),
+  });
+}
+
+// =================== HIDDEN ITEMS ===================
+export function useHiddenItems() {
+  const { data: user } = useMe();
+  return useQuery({
+    queryKey: ["hidden-items", user?.id ?? null],
+    enabled: !!user?.id,
+    queryFn: async (): Promise<{ folders: Set<string>; projects: Set<string>; tasks: Set<string> }> => {
+      const empty = { folders: new Set<string>(), projects: new Set<string>(), tasks: new Set<string>() };
+      if (!user?.id) return empty;
+      const { data, error } = await sb()
+        .from("hidden_items")
+        .select("item_kind,item_id")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      const out = { folders: new Set<string>(), projects: new Set<string>(), tasks: new Set<string>() };
+      for (const row of data ?? []) {
+        if (row.item_kind === "folder") out.folders.add(row.item_id);
+        else if (row.item_kind === "project") out.projects.add(row.item_id);
+        else if (row.item_kind === "task") out.tasks.add(row.item_id);
+      }
+      return out;
+    },
+  });
+}
+
+export function useToggleHidden() {
+  const qc = useQueryClient();
+  const { data: user } = useMe();
+  return useMutation({
+    mutationFn: async ({
+      kind,
+      id,
+      hide,
+    }: {
+      kind: "folder" | "project" | "task";
+      id: string;
+      hide: boolean;
+    }) => {
+      if (!user?.id) throw new Error("Non authentifié");
+      if (hide) {
+        const { error } = await sb()
+          .from("hidden_items")
+          .insert({ user_id: user.id, item_kind: kind, item_id: id });
+        if (error && error.code !== "23505") throw error;
+      } else {
+        const { error } = await sb()
+          .from("hidden_items")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("item_kind", kind)
+          .eq("item_id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hidden-items"] });
+    },
+  });
+}
+
 // =================== FOLDERS ===================
 export function useFolders() {
   return useQuery({
@@ -173,6 +320,7 @@ export function useCreateProject() {
       name: string;
       folder_id: string | null;
       position: number;
+      is_routine?: boolean;
     }) => {
       const { data, error } = await sb()
         .from("projects")
@@ -274,6 +422,7 @@ export function useCreateTask() {
       parent_task_id?: string | null;
       status?: TaskStatus;
       position?: number;
+      due_date?: string | null;
     }) => {
       const { data: u } = await sb().auth.getUser();
       const { data, error } = await sb()
@@ -284,6 +433,7 @@ export function useCreateTask() {
           title: input.title,
           status: input.status ?? "a_faire",
           position: input.position ?? 0,
+          due_date: input.due_date ?? null,
           created_by: u.user?.id ?? null,
         })
         .select()
@@ -350,6 +500,87 @@ export function useUpdateSubtask(parentId: string, projectId: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.subtasks(parentId) });
       qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+      qc.invalidateQueries({ queryKey: qk.workload });
+    },
+  });
+}
+
+// =================== BULK TASK OPS ===================
+export function useBulkUpdateTasks(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskIds,
+      patch,
+    }: {
+      taskIds: string[];
+      patch: { status?: TaskStatus; due_date?: string | null };
+    }) => {
+      if (taskIds.length === 0) return;
+      const { error } = await sb()
+        .from("tasks")
+        .update(patch)
+        .in("id", taskIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+      qc.invalidateQueries({ queryKey: ["all-tasks"] });
+      qc.invalidateQueries({ queryKey: qk.workload });
+    },
+  });
+}
+
+export function useBulkAssign(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskIds,
+      userId,
+      assign,
+    }: {
+      taskIds: string[];
+      userId: string;
+      assign: boolean;
+    }) => {
+      if (taskIds.length === 0) return;
+      if (assign) {
+        const rows = taskIds.map((tid) => ({ task_id: tid, user_id: userId }));
+        const { error } = await sb()
+          .from("task_assignees")
+          .upsert(rows, { onConflict: "task_id,user_id" });
+        if (error) throw error;
+      } else {
+        const { error } = await sb()
+          .from("task_assignees")
+          .delete()
+          .eq("user_id", userId)
+          .in("task_id", taskIds);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, vars) => {
+      vars.taskIds.forEach((tid) =>
+        qc.invalidateQueries({ queryKey: qk.taskAssignees(tid) }),
+      );
+      qc.invalidateQueries({ queryKey: ["tasks-assignees-map"] });
+      qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+      qc.invalidateQueries({ queryKey: qk.workload });
+    },
+  });
+}
+
+export function useBulkDeleteTasks(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (taskIds: string[]) => {
+      if (taskIds.length === 0) return;
+      const { error } = await sb().from("tasks").delete().in("id", taskIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+      qc.invalidateQueries({ queryKey: ["all-tasks"] });
       qc.invalidateQueries({ queryKey: qk.workload });
     },
   });
@@ -422,6 +653,30 @@ export function useRealtimeTasks(projectId: string | undefined) {
 }
 
 // =================== TASK ASSIGNEES ===================
+export function useTasksAssigneesMap(taskIds: string[]) {
+  const key = [...taskIds].sort().join(",");
+  const { data } = useQuery({
+    queryKey: ["tasks-assignees-map", key],
+    enabled: taskIds.length > 0,
+    queryFn: async (): Promise<Map<string, string[]>> => {
+      const map = new Map<string, string[]>();
+      if (taskIds.length === 0) return map;
+      const { data, error } = await sb()
+        .from("task_assignees")
+        .select("task_id,user_id")
+        .in("task_id", taskIds);
+      if (error) throw error;
+      for (const row of data ?? []) {
+        const arr = map.get(row.task_id) ?? [];
+        arr.push(row.user_id);
+        map.set(row.task_id, arr);
+      }
+      return map;
+    },
+  });
+  return data ?? new Map<string, string[]>();
+}
+
 export function useTaskAssignees(taskId: string | undefined) {
   return useQuery({
     queryKey: taskId ? qk.taskAssignees(taskId) : ["task-assignees", "noop"],
@@ -471,6 +726,162 @@ export function useToggleAssignee() {
   });
 }
 
+// =================== NOTIFICATION PREFS ===================
+export type NotifPrefs = Database["public"]["Tables"]["notification_prefs"]["Row"];
+
+export function useNotifPrefs() {
+  const { data: user } = useMe();
+  return useQuery({
+    queryKey: ["notif-prefs", user?.id ?? null],
+    enabled: !!user?.id,
+    queryFn: async (): Promise<NotifPrefs | null> => {
+      if (!user?.id) return null;
+      const { data, error } = await sb()
+        .from("notification_prefs")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateNotifPrefs() {
+  const qc = useQueryClient();
+  const { data: user } = useMe();
+  return useMutation({
+    mutationFn: async (patch: Partial<NotifPrefs>) => {
+      if (!user?.id) throw new Error("Non authentifié");
+      const { error } = await sb()
+        .from("notification_prefs")
+        .upsert(
+          {
+            user_id: user.id,
+            ...patch,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["notif-prefs"] }),
+  });
+}
+
+// =================== TASK ATTACHMENTS ===================
+export type TaskAttachment = Database["public"]["Tables"]["task_attachments"]["Row"];
+
+export function useTasksAttachmentCounts(taskIds: string[]) {
+  const key = [...taskIds].sort().join(",");
+  const { data } = useQuery({
+    queryKey: ["tasks-attachment-counts", key],
+    enabled: taskIds.length > 0,
+    queryFn: async (): Promise<Map<string, number>> => {
+      const map = new Map<string, number>();
+      if (taskIds.length === 0) return map;
+      const { data, error } = await sb()
+        .from("task_attachments")
+        .select("task_id")
+        .in("task_id", taskIds);
+      if (error) throw error;
+      for (const row of data ?? []) {
+        map.set(row.task_id, (map.get(row.task_id) ?? 0) + 1);
+      }
+      return map;
+    },
+    staleTime: 30_000,
+  });
+  return data ?? new Map<string, number>();
+}
+
+export function useTaskAttachments(taskId: string | undefined) {
+  return useQuery({
+    queryKey: taskId ? ["task-attachments", taskId] : ["task-attachments", "noop"],
+    enabled: !!taskId,
+    queryFn: async (): Promise<TaskAttachment[]> => {
+      if (!taskId) return [];
+      const { data, error } = await sb()
+        .from("task_attachments")
+        .select("*")
+        .eq("task_id", taskId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useUploadAttachment(taskId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const { data: u } = await sb().auth.getUser();
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${taskId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await sb()
+        .storage
+        .from("attachments")
+        .upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+      const { error } = await sb()
+        .from("task_attachments")
+        .insert({
+          task_id: taskId,
+          storage_path: path,
+          file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          uploaded_by: u.user?.id ?? null,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["task-attachments", taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks-attachment-counts"] });
+    },
+  });
+}
+
+export function useDeleteAttachment(taskId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (attachment: TaskAttachment) => {
+      await sb().storage.from("attachments").remove([attachment.storage_path]);
+      const { error } = await sb()
+        .from("task_attachments")
+        .delete()
+        .eq("id", attachment.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["task-attachments", taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks-attachment-counts"] });
+    },
+  });
+}
+
+export function getAttachmentUrl(path: string) {
+  return sb().storage.from("attachments").createSignedUrl(path, 60 * 60);
+}
+
+// =================== ALL TASKS (overview) ===================
+export function useAllTasks() {
+  return useQuery({
+    queryKey: ["all-tasks"],
+    queryFn: async (): Promise<Task[]> => {
+      const { data, error } = await sb()
+        .from("tasks")
+        .select("*")
+        .order("due_date", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+}
+
 // =================== WORKLOAD ===================
 export function useWorkload() {
   return useQuery({
@@ -485,7 +896,21 @@ export function useWorkload() {
   });
 }
 
-// =================== ROUTINES ===================
+// =================== ROUTINES (all + per project) ===================
+export function useAllRoutines() {
+  return useQuery({
+    queryKey: ["all-routines"],
+    queryFn: async (): Promise<Routine[]> => {
+      const { data, error } = await sb()
+        .from("routines")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useRoutines(projectId: string | undefined) {
   return useQuery({
     queryKey: projectId ? qk.routines(projectId) : ["routines", "noop"],

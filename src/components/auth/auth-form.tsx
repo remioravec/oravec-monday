@@ -2,11 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { ArrowRight, Lock, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -51,52 +50,80 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
       {mode === "signup" && (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="full_name">Prénom (visible par l&apos;équipe)</Label>
-          <Input id="full_name" name="full_name" type="text" required autoFocus />
-        </div>
-      )}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required autoComplete="email" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Mot de passe</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
+        <Field
+          id="full_name"
+          name="full_name"
+          type="text"
+          label="Prénom"
+          placeholder="Votre prénom"
+          icon={User}
           required
-          minLength={6}
-          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          autoFocus
         />
-      </div>
-      <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
-        {loading
-          ? "…"
-          : mode === "signup"
-            ? "Créer mon compte"
-            : "Se connecter"}
-      </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        {mode === "signup" ? (
-          <>
-            Déjà un compte ?{" "}
-            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-              Se connecter
-            </Link>
-          </>
+      )}
+      <Field
+        id="email"
+        name="email"
+        type="email"
+        label="Email"
+        placeholder="vous@exemple.com"
+        icon={Mail}
+        required
+        autoComplete="email"
+      />
+      <Field
+        id="password"
+        name="password"
+        type="password"
+        label="Mot de passe"
+        placeholder="••••••••"
+        icon={Lock}
+        required
+        minLength={6}
+        autoComplete={mode === "signup" ? "new-password" : "current-password"}
+      />
+      <Button
+        type="submit"
+        disabled={loading}
+        className="mt-1 h-11 w-full rounded-xl bg-blue-600 text-base font-medium text-white shadow-sm hover:bg-blue-700"
+      >
+        {loading ? (
+          "…"
         ) : (
           <>
-            Pas de compte ?{" "}
-            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
-              Créer un compte
-            </Link>
+            {mode === "signup" ? "Créer mon compte" : "Se connecter"}
+            <ArrowRight className="ml-1.5 size-4" />
           </>
         )}
-      </p>
+      </Button>
     </form>
+  );
+}
+
+type FieldProps = React.ComponentProps<"input"> & {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+function Field({ label, icon: Icon, id, className, ...inputProps }: FieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id} className="text-sm font-medium text-foreground">
+        {label}
+      </Label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          id={id}
+          {...inputProps}
+          className={
+            "h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50 " +
+            (className ?? "")
+          }
+        />
+      </div>
+    </div>
   );
 }

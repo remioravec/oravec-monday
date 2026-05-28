@@ -28,11 +28,16 @@ import {
   MoreHorizontal,
   Folder as FolderIcon,
   LayoutGrid,
-  LogOut,
   Trash2,
   Pencil,
   ArrowRightLeft,
+  Eye,
+  EyeOff,
+  Repeat,
+  Calendar,
 } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
+import { UserMenu } from "@/components/sidebar/user-menu";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +62,8 @@ import {
   useDeleteProject,
   useReorderFolders,
   useReorderProjects,
-  useSignOut,
+  useHiddenItems,
+  useToggleHidden,
 } from "@/lib/queries";
 
 type Folder = ReturnType<typeof useFolders>["data"] extends (infer T)[] | undefined
@@ -69,12 +75,25 @@ type Project = ReturnType<typeof useProjects>["data"] extends (infer T)[] | unde
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { data: folders = [] } = useFolders();
-  const { data: projects = [] } = useProjects();
+  const { data: foldersAll = [] } = useFolders();
+  const { data: projectsAll = [] } = useProjects();
+  const { data: hidden } = useHiddenItems();
   const reorderFolders = useReorderFolders();
   const reorderProjects = useReorderProjects();
   const createFolder = useCreateFolder();
-  const signOut = useSignOut();
+  const createProject = useCreateProject();
+  const [showHidden, setShowHidden] = useState(false);
+
+  const folders = showHidden
+    ? foldersAll
+    : foldersAll.filter((f) => !hidden?.folders.has(f.id));
+  const projects = showHidden
+    ? projectsAll
+    : projectsAll.filter((p) => !hidden?.projects.has(p.id));
+  const routineProjects = projects.filter((p) => p.is_routine);
+  const hiddenCount =
+    (hidden?.folders.size ?? 0) +
+    (hidden?.projects.size ?? 0);
 
   // Expand/collapse override map (undefined = open by default).
   const [foldersCollapsed, setFoldersCollapsed] = useState<Record<string, boolean>>({});
@@ -123,21 +142,43 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
     );
   }
 
-  async function handleSignOut() {
-    await signOut.mutateAsync();
-    window.location.href = "/login";
+  async function handleAddRoutine() {
+    const name = window.prompt("Nom de la routine ?");
+    if (!name?.trim()) return;
+    let folderId: string | null = null;
+    if (folders.length > 0) {
+      const listing = folders
+        .map((f, i) => `${i + 1}. ${f.name}`)
+        .join("\n");
+      const choice = window.prompt(
+        `Dans quel dossier ranger la routine ?\n0. (aucun)\n${listing}`,
+        "0",
+      );
+      const idx = Number(choice);
+      if (!Number.isNaN(idx) && idx >= 1 && idx <= folders.length) {
+        folderId = folders[idx - 1].id;
+      }
+    }
+    await createProject.mutateAsync(
+      {
+        name: name.trim(),
+        folder_id: folderId,
+        position: routineProjects.length,
+        is_routine: true,
+      },
+      {
+        onError: (e) => toast.error(e.message),
+        onSuccess: () =>
+          toast.success("Routine créée — configure la récurrence sur sa page"),
+      },
+    );
   }
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Header */}
       <div className="flex items-center gap-2 border-b px-4 py-3">
-        <div className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">
-          <LayoutGrid className="size-4" />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">Oravec Monday</div>
-        </div>
+        <Logo />
       </div>
 
       {/* Nav top-level */}
@@ -150,19 +191,39 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <LayoutGrid className="size-4" />
           Vue d&apos;ensemble
         </Link>
+        <Link
+          href="/app/calendar"
+          onClick={onNavigate}
+          className={navLinkClass(pathname === "/app/calendar")}
+        >
+          <Calendar className="size-4" />
+          Calendrier
+        </Link>
       </nav>
+
 
       {/* Folders */}
       <div className="flex items-center justify-between px-4 pt-2 pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         <span>Dossiers</span>
-        <Button
-          size="icon-xs"
-          variant="ghost"
-          onClick={handleAddFolder}
-          aria-label="Ajouter un dossier"
-        >
-          <Plus />
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={handleAddRoutine}
+            aria-label="Nouvelle routine"
+            title="Nouvelle routine"
+          >
+            <Repeat className="text-purple-600" />
+          </Button>
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={handleAddFolder}
+            aria-label="Ajouter un dossier"
+          >
+            <Plus />
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-1 pb-3">
@@ -217,17 +278,23 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer : show hidden + user menu */}
       <div className="border-t px-2 py-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start"
-          onClick={handleSignOut}
-        >
-          <LogOut className="size-4" />
-          Se déconnecter
-        </Button>
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowHidden((s) => !s)}
+            className="mb-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent/60"
+          >
+            {showHidden ? (
+              <EyeOff className="size-3.5" />
+            ) : (
+              <Eye className="size-3.5" />
+            )}
+            {showHidden ? "Masquer les éléments cachés" : `Afficher (${hiddenCount}) cachés`}
+          </button>
+        )}
+        <UserMenu onNavigate={onNavigate} />
       </div>
     </div>
   );
@@ -271,6 +338,9 @@ function FolderRow({
   const updateFolder = useUpdateFolder();
   const deleteFolder = useDeleteFolder();
   const createProject = useCreateProject();
+  const toggleHidden = useToggleHidden();
+  const { data: hidden } = useHiddenItems();
+  const isHidden = hidden?.folders.has(folder.id) ?? false;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -399,6 +469,27 @@ function FolderRow({
               <Pencil className="size-3.5" />
               Renommer
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                toggleHidden.mutate({
+                  kind: "folder",
+                  id: folder.id,
+                  hide: !isHidden,
+                })
+              }
+            >
+              {isHidden ? (
+                <>
+                  <Eye className="size-3.5" />
+                  Réafficher
+                </>
+              ) : (
+                <>
+                  <EyeOff className="size-3.5" />
+                  Masquer pour moi
+                </>
+              )}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleDelete}>
               <Trash2 className="size-3.5" />
@@ -504,6 +595,9 @@ function ProjectLink({
   const [name, setName] = useState(project.name);
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const toggleHidden = useToggleHidden();
+  const { data: hidden } = useHiddenItems();
+  const isHidden = hidden?.projects.has(project.id) ?? false;
 
   async function handleRename() {
     if (!name.trim() || name === project.name) {
@@ -529,12 +623,17 @@ function ProjectLink({
   return (
     <div
       className={[
-        "flex flex-1 items-center gap-1 rounded-md px-2 py-1 transition-colors",
+        "flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 transition-colors",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           : "hover:bg-sidebar-accent/60",
       ].join(" ")}
     >
+      <span
+        aria-hidden
+        className="size-2 shrink-0 rounded-full"
+        style={{ backgroundColor: project.color ?? "#94a3b8" }}
+      />
       {renaming ? (
         <Input
           autoFocus
@@ -554,9 +653,15 @@ function ProjectLink({
         <Link
           href={`/app/projects/${project.id}`}
           onClick={onNavigate}
-          className="flex-1 truncate text-sm"
+          className="flex flex-1 items-center gap-1.5 truncate text-sm"
         >
-          {project.name}
+          {project.is_routine && (
+            <Repeat
+              className="size-3 shrink-0 text-purple-600"
+              aria-label="Routine"
+            />
+          )}
+          <span className="truncate">{project.name}</span>
         </Link>
       )}
       <DropdownMenu>
@@ -576,6 +681,27 @@ function ProjectLink({
           <DropdownMenuItem onClick={() => setRenaming(true)}>
             <Pencil className="size-3.5" />
             Renommer
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              toggleHidden.mutate({
+                kind: "project",
+                id: project.id,
+                hide: !isHidden,
+              })
+            }
+          >
+            {isHidden ? (
+              <>
+                <Eye className="size-3.5" />
+                Réafficher
+              </>
+            ) : (
+              <>
+                <EyeOff className="size-3.5" />
+                Masquer pour moi
+              </>
+            )}
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
