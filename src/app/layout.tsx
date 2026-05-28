@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -10,22 +10,15 @@ const inter = Inter({
   display: "swap",
 });
 
-const fraunces = Fraunces({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "FamTask — gestion familiale",
+  title: "Oravec Monday — gestion de projet",
   description:
-    "Gérez projets, tâches et routines à l'échelle du foyer — avec une attention à la charge mentale et une UX accessible dès 3 ans.",
-  applicationName: "FamTask",
-  // manifest: "/manifest.webmanifest", // activé à la tâche PWA (#10)
+    "Tableaux de projets, tâches, sous-tâches et routines récurrentes pour l'équipe.",
+  applicationName: "Oravec Monday",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5B7FFF",
+  themeColor: "#6366f1",
   width: "device-width",
   initialScale: 1,
 };
@@ -38,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
         <Toaster richColors position="top-center" />
       </body>

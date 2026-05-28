@@ -1,666 +1,213 @@
+// Types Supabase générés à la main pour le schéma Monday-clone.
+// Si tu régénères automatiquement (`supabase gen types typescript --linked`),
+// remplace ce fichier par la sortie.
+//
+// IMPORTANT : chaque table/view doit avoir `Relationships: []` même vide,
+// sinon `@supabase/postgrest-js` ne matche pas le shape `GenericTable` et
+// les types `Insert`/`Update` tombent à `never`.
+
 export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
-export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+export type TaskStatus = "a_faire" | "en_cours" | "fait";
+export type RoutineFrequency = "daily" | "weekly" | "monthly";
+
+export interface Database {
   public: {
     Tables: {
-      automations: {
-        Row: {
-          action_json: Json
-          active: boolean
-          created_at: string
-          household_id: string
-          id: string
-          trigger_json: Json
-        }
-        Insert: {
-          action_json: Json
-          active?: boolean
-          created_at?: string
-          household_id: string
-          id?: string
-          trigger_json: Json
-        }
-        Update: {
-          action_json?: Json
-          active?: boolean
-          created_at?: string
-          household_id?: string
-          id?: string
-          trigger_json?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "automations_household_id_fkey"
-            columns: ["household_id"]
-            isOneToOne: false
-            referencedRelation: "households"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      battery_snapshots: {
-        Row: {
-          created_at: string
-          cycle_end: string
-          cycle_start: string
-          id: string
-          profile_id: string
-          used_pct: number
-        }
-        Insert: {
-          created_at?: string
-          cycle_end: string
-          cycle_start: string
-          id?: string
-          profile_id: string
-          used_pct: number
-        }
-        Update: {
-          created_at?: string
-          cycle_end?: string
-          cycle_start?: string
-          id?: string
-          profile_id?: string
-          used_pct?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "battery_snapshots_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      folders: {
-        Row: {
-          color: string | null
-          created_at: string
-          household_id: string
-          icon: string | null
-          id: string
-          name: string
-          position: number
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          household_id: string
-          icon?: string | null
-          id?: string
-          name: string
-          position?: number
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          household_id?: string
-          icon?: string | null
-          id?: string
-          name?: string
-          position?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "folders_household_id_fkey"
-            columns: ["household_id"]
-            isOneToOne: false
-            referencedRelation: "households"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      households: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          payload: Json
-          profile_id: string
-          read_at: string | null
-          type: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          payload?: Json
-          profile_id: string
-          read_at?: string | null
-          type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          payload?: Json
-          profile_id?: string
-          read_at?: string | null
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_credentials: {
-        Row: {
-          pin_hash: string
-          profile_id: string
-          updated_at: string
-        }
-        Insert: {
-          pin_hash: string
-          profile_id: string
-          updated_at?: string
-        }
-        Update: {
-          pin_hash?: string
-          profile_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_credentials_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
-          avatar: string | null
-          battery_cycle: string
-          child_mode: string | null
-          color: string
-          created_at: string
-          display_name: string
-          household_id: string
-          id: string
-          role: string
-          user_id: string | null
-        }
+          id: string;
+          full_name: string | null;
+          avatar_url: string | null;
+          color: string;
+          created_at: string;
+        };
         Insert: {
-          avatar?: string | null
-          battery_cycle?: string
-          child_mode?: string | null
-          color?: string
-          created_at?: string
-          display_name: string
-          household_id: string
-          id?: string
-          role: string
-          user_id?: string | null
-        }
+          id: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          color?: string;
+          created_at?: string;
+        };
         Update: {
-          avatar?: string | null
-          battery_cycle?: string
-          child_mode?: string | null
-          color?: string
-          created_at?: string
-          display_name?: string
-          household_id?: string
-          id?: string
-          role?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_household_id_fkey"
-            columns: ["household_id"]
-            isOneToOne: false
-            referencedRelation: "households"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_members: {
+          id?: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          color?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      folders: {
         Row: {
-          profile_id: string
-          project_id: string
-        }
+          id: string;
+          name: string;
+          position: number;
+          created_at: string;
+        };
         Insert: {
-          profile_id: string
-          project_id: string
-        }
+          id?: string;
+          name: string;
+          position?: number;
+          created_at?: string;
+        };
         Update: {
-          profile_id?: string
-          project_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+          id?: string;
+          name?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       projects: {
         Row: {
-          created_at: string
-          end_at: string | null
-          folder_id: string
-          id: string
-          name: string
-          position: number
-          start_at: string | null
-          view_default: string
-        }
+          id: string;
+          folder_id: string | null;
+          name: string;
+          color: string | null;
+          position: number;
+          created_at: string;
+        };
         Insert: {
-          created_at?: string
-          end_at?: string | null
-          folder_id: string
-          id?: string
-          name: string
-          position?: number
-          start_at?: string | null
-          view_default?: string
-        }
+          id?: string;
+          folder_id?: string | null;
+          name: string;
+          color?: string | null;
+          position?: number;
+          created_at?: string;
+        };
         Update: {
-          created_at?: string
-          end_at?: string | null
-          folder_id?: string
-          id?: string
-          name?: string
-          position?: number
-          start_at?: string | null
-          view_default?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      routines: {
-        Row: {
-          active: boolean
-          created_at: string
-          household_id: string
-          id: string
-          name: string
-          task_template_ids: Json
-          trigger_time: string | null
-          trigger_type: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          household_id: string
-          id?: string
-          name: string
-          task_template_ids?: Json
-          trigger_time?: string | null
-          trigger_type: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          household_id?: string
-          id?: string
-          name?: string
-          task_template_ids?: Json
-          trigger_time?: string | null
-          trigger_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "routines_household_id_fkey"
-            columns: ["household_id"]
-            isOneToOne: false
-            referencedRelation: "households"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subtasks: {
-        Row: {
-          done: boolean
-          id: string
-          position: number
-          task_id: string
-          title: string
-        }
-        Insert: {
-          done?: boolean
-          id?: string
-          position?: number
-          task_id: string
-          title: string
-        }
-        Update: {
-          done?: boolean
-          id?: string
-          position?: number
-          task_id?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subtasks_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      task_assignees: {
-        Row: {
-          profile_id: string
-          task_id: string
-        }
-        Insert: {
-          profile_id: string
-          task_id: string
-        }
-        Update: {
-          profile_id?: string
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_assignees_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_assignees_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+          id?: string;
+          folder_id?: string | null;
+          name?: string;
+          color?: string | null;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       tasks: {
         Row: {
-          audio_url: string | null
-          auto_complete_on_subtasks: boolean
-          battery_cost: number
-          created_at: string
-          created_by: string | null
-          description: string | null
-          due_at: string | null
-          id: string
-          pictogram_url: string | null
-          priority: string
-          project_id: string
-          recurrence_rule: Json | null
-          status: string
-          title: string
-        }
+          id: string;
+          project_id: string | null;
+          parent_task_id: string | null;
+          title: string;
+          description: string | null;
+          status: TaskStatus;
+          due_date: string | null;
+          position: number;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          audio_url?: string | null
-          auto_complete_on_subtasks?: boolean
-          battery_cost?: number
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          due_at?: string | null
-          id?: string
-          pictogram_url?: string | null
-          priority?: string
-          project_id: string
-          recurrence_rule?: Json | null
-          status?: string
-          title: string
-        }
+          id?: string;
+          project_id?: string | null;
+          parent_task_id?: string | null;
+          title: string;
+          description?: string | null;
+          status?: TaskStatus;
+          due_date?: string | null;
+          position?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          audio_url?: string | null
-          auto_complete_on_subtasks?: boolean
-          battery_cost?: number
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          due_at?: string | null
-          id?: string
-          pictogram_url?: string | null
-          priority?: string
-          project_id?: string
-          recurrence_rule?: Json | null
-          status?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
+          id?: string;
+          project_id?: string | null;
+          parent_task_id?: string | null;
+          title?: string;
+          description?: string | null;
+          status?: TaskStatus;
+          due_date?: string | null;
+          position?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      task_assignees: {
+        Row: { task_id: string; user_id: string };
+        Insert: { task_id: string; user_id: string };
+        Update: { task_id?: string; user_id?: string };
+        Relationships: [];
+      };
+      routines: {
+        Row: {
+          id: string;
+          project_id: string | null;
+          title: string;
+          description: string | null;
+          frequency: RoutineFrequency;
+          days_of_week: number[] | null;
+          day_of_month: number | null;
+          time_of_day: string | null;
+          active: boolean;
+          last_generated_date: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id?: string | null;
+          title: string;
+          description?: string | null;
+          frequency: RoutineFrequency;
+          days_of_week?: number[] | null;
+          day_of_month?: number | null;
+          time_of_day?: string | null;
+          active?: boolean;
+          last_generated_date?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string | null;
+          title?: string;
+          description?: string | null;
+          frequency?: RoutineFrequency;
+          days_of_week?: number[] | null;
+          day_of_month?: number | null;
+          time_of_day?: string | null;
+          active?: boolean;
+          last_generated_date?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      routine_assignees: {
+        Row: { routine_id: string; user_id: string };
+        Insert: { routine_id: string; user_id: string };
+        Update: { routine_id?: string; user_id?: string };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      can_access_project: { Args: { p_project_id: string }; Returns: boolean }
-      can_access_task: { Args: { p_task_id: string }; Returns: boolean }
-      current_child_is_reader: { Args: never; Returns: boolean }
-      current_household_id: { Args: never; Returns: string }
-      current_profile_id: { Args: never; Returns: string }
-      is_assigned_to_task: { Args: { p_task_id: string }; Returns: boolean }
-      is_parent: { Args: never; Returns: boolean }
-      setup_household: {
-        Args: {
-          p_color?: string
-          p_display_name: string
-          p_household_name: string
-        }
-        Returns: string
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+      person_workload: {
+        Row: {
+          user_id: string;
+          full_name: string | null;
+          color: string;
+          a_faire: number;
+          en_cours: number;
+          fait: number;
+          total: number;
+        };
+        Relationships: [];
+      };
+    };
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
 }
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {},
-  },
-} as const
-
