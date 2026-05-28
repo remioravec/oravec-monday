@@ -97,6 +97,16 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
   }
 
   async function handleDownload(a: TaskAttachment) {
+    // Pièce jointe Drive : on ouvre directement le lien Google Drive.
+    if (a.source === "drive") {
+      if (a.external_url) window.open(a.external_url, "_blank");
+      else toast.error("Lien Drive introuvable");
+      return;
+    }
+    if (!a.storage_path) {
+      toast.error("Lien introuvable");
+      return;
+    }
     const { data, error } = await getAttachmentUrl(a.storage_path);
     if (error || !data) {
       toast.error("Lien introuvable");

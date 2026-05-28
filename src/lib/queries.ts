@@ -848,7 +848,10 @@ export function useDeleteAttachment(taskId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (attachment: TaskAttachment) => {
-      await sb().storage.from("attachments").remove([attachment.storage_path]);
+      // Les pièces jointes Drive n'ont pas de fichier dans le Storage.
+      if (attachment.source !== "drive" && attachment.storage_path) {
+        await sb().storage.from("attachments").remove([attachment.storage_path]);
+      }
       const { error } = await sb()
         .from("task_attachments")
         .delete()
