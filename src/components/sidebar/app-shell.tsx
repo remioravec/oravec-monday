@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { AppSidebar } from "./app-sidebar";
 import { Logo } from "@/components/brand/logo";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
+import { useRealtimeProfiles } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -16,6 +17,8 @@ import {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Avatars/noms à jour en direct entre utilisateurs.
+  useRealtimeProfiles();
 
   return (
     <div className="flex min-h-svh">
