@@ -726,6 +726,20 @@ export function useToggleAssignee() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: qk.taskAssignees(vars.taskId) });
       qc.invalidateQueries({ queryKey: qk.workload });
+      // Notification push à la personne assignée (best-effort, ignore si la
+      // fonction/les clés VAPID ne sont pas configurées).
+      if (vars.assign) {
+        void sb()
+          .functions.invoke("send-push", {
+            body: {
+              userId: vars.userId,
+              title: "Nouvelle tâche",
+              body: "Une tâche vient de t'être assignée.",
+              url: "/app",
+            },
+          })
+          .catch(() => {});
+      }
     },
   });
 }
