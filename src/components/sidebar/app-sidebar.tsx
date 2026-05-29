@@ -187,12 +187,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+    <div className="flex h-full flex-col bg-white text-sidebar-foreground">
+      {/* Header : logo sur fond blanc */}
+      <div className="flex items-center gap-2 px-4 py-3">
         <Logo />
       </div>
 
+      {/* Corps de la sidebar : démarre par un arrondi juste sous le logo */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-sidebar-border bg-muted/60">
       {/* CTA primaire « Nouveau » (style Drive) */}
       <div className="px-2 pt-3">
         <DropdownMenu>
@@ -339,6 +341,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         )}
         <UserMenu onNavigate={onNavigate} />
+      </div>
       </div>
     </div>
   );
