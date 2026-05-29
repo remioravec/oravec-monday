@@ -22,12 +22,23 @@ export const metadata: Metadata = {
     "Tableaux de projets, tâches, sous-tâches et routines récurrentes pour l'équipe.",
   applicationName: "Oravec Monday",
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Oravec",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#1a73e8",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
