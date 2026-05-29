@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter, LayoutGrid } from "lucide-react";
+import { Filter, LayoutGrid, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamBattery } from "@/components/overview/team-battery";
 import { UpcomingTasks } from "@/components/overview/upcoming-tasks";
 import { RoutinesTracker } from "@/components/overview/routines-tracker";
@@ -19,6 +20,7 @@ import {
   useTasksAssigneesMap,
   useUpdateAllTask,
   useWorkload,
+  type Profile,
 } from "@/lib/queries";
 import type { UserRole } from "@/lib/supabase/database.types";
 
@@ -129,6 +131,12 @@ export default function OverviewPage() {
 
       <ChildrenOverview people={myChildren} workload={workload} />
 
+      <PeopleFilter
+        profiles={visibleProfiles}
+        active={assigneeFilter}
+        onChange={setAssigneeFilter}
+      />
+
       <UpcomingTasks
         tasks={filteredTasks}
         projects={projects.map((p) => ({
@@ -213,6 +221,71 @@ function RoleChip({
     >
       {children}
     </button>
+  );
+}
+
+function PeopleFilter({
+  profiles,
+  active,
+  onChange,
+}: {
+  profiles: Profile[];
+  active: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  if (profiles.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Users className="size-3.5" />
+        Filtrer par personne
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={[
+            "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+            active === null
+              ? "border-transparent bg-primary text-white shadow-sm"
+              : "bg-card text-muted-foreground hover:bg-muted",
+          ].join(" ")}
+        >
+          Tous
+        </button>
+        {profiles.map((p) => {
+          const init = (p.full_name ?? "?").trim().charAt(0).toUpperCase();
+          const selected = active === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onChange(selected ? null : p.id)}
+              className={[
+                "inline-flex h-9 items-center gap-2 rounded-full border pl-1 pr-3 text-xs font-medium transition-colors",
+                selected
+                  ? "border-transparent bg-primary text-white shadow-sm"
+                  : "bg-card text-foreground hover:bg-muted",
+              ].join(" ")}
+              title={p.full_name ?? ""}
+            >
+              <Avatar className="size-7" style={{ backgroundColor: p.color }}>
+                {p.avatar_url && (
+                  <AvatarImage src={p.avatar_url} alt={p.full_name ?? ""} />
+                )}
+                <AvatarFallback
+                  className="text-[10px] font-semibold text-white"
+                  style={{ backgroundColor: p.color }}
+                >
+                  {init}
+                </AvatarFallback>
+              </Avatar>
+              <span className="max-w-[120px] truncate">{p.full_name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
