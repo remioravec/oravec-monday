@@ -8,7 +8,13 @@ import {
   DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import type { Profile } from "@/lib/queries";
 
 export function getInitials(name: string | null | undefined) {
@@ -25,7 +31,7 @@ export function AssigneeAvatar({
   profile,
   size = "sm",
 }: {
-  profile: Pick<Profile, "id" | "full_name" | "color">;
+  profile: Pick<Profile, "id" | "full_name" | "color" | "avatar_url">;
   size?: "sm" | "default";
 }) {
   return (
@@ -34,6 +40,9 @@ export function AssigneeAvatar({
       title={profile.full_name ?? "Sans nom"}
       style={{ backgroundColor: profile.color }}
     >
+      {profile.avatar_url && (
+        <AvatarImage src={profile.avatar_url} alt={profile.full_name ?? ""} />
+      )}
       <AvatarFallback
         className="text-white"
         style={{ backgroundColor: profile.color }}
