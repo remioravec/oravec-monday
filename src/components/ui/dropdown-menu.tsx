@@ -57,11 +57,14 @@ function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: MenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<"div"> & {
   inset?: boolean
 }) {
+  // Rendu en simple <div> (et non MenuPrimitive.GroupLabel) : un GroupLabel
+  // Base UI exige un <Menu.Group> parent, ce qui faisait planter les menus
+  // l'utilisant sans groupe (erreur Base UI #31).
   return (
-    <MenuPrimitive.GroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
