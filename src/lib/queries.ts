@@ -8,6 +8,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { useWorkspaceStore } from "@/lib/workspace-store";
 import type { Database, TaskStatus, RoutineFrequency } from "@/lib/supabase/database.types";
 
 type Folder = Database["public"]["Tables"]["folders"]["Row"];
@@ -210,12 +211,15 @@ export function useToggleHidden() {
 
 // =================== FOLDERS ===================
 export function useFolders() {
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useQuery({
-    queryKey: qk.folders,
+    queryKey: [...qk.folders, ws],
+    enabled: !!ws,
     queryFn: async (): Promise<Folder[]> => {
       const { data, error } = await sb()
         .from("folders")
         .select("*")
+        .eq("workspace_id", ws!)
         .order("position", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -225,11 +229,12 @@ export function useFolders() {
 
 export function useCreateFolder() {
   const qc = useQueryClient();
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useMutation({
     mutationFn: async ({ name, position }: { name: string; position: number }) => {
       const { data, error } = await sb()
         .from("folders")
-        .insert({ name, position })
+        .insert({ name, position, workspace_id: ws })
         .select()
         .single();
       if (error) throw error;
@@ -283,12 +288,15 @@ export function useReorderFolders() {
 
 // =================== PROJECTS ===================
 export function useProjects() {
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useQuery({
-    queryKey: qk.projects,
+    queryKey: [...qk.projects, ws],
+    enabled: !!ws,
     queryFn: async (): Promise<Project[]> => {
       const { data, error } = await sb()
         .from("projects")
         .select("*")
+        .eq("workspace_id", ws!)
         .order("position", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -315,6 +323,7 @@ export function useProject(id: string | undefined) {
 
 export function useCreateProject() {
   const qc = useQueryClient();
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useMutation({
     mutationFn: async (input: {
       name: string;
@@ -324,7 +333,7 @@ export function useCreateProject() {
     }) => {
       const { data, error } = await sb()
         .from("projects")
-        .insert(input)
+        .insert({ ...input, workspace_id: ws })
         .select()
         .single();
       if (error) throw error;
@@ -922,12 +931,15 @@ export function getAttachmentUrl(path: string) {
 
 // =================== ALL TASKS (overview) ===================
 export function useAllTasks() {
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useQuery({
-    queryKey: ["all-tasks"],
+    queryKey: ["all-tasks", ws],
+    enabled: !!ws,
     queryFn: async (): Promise<Task[]> => {
       const { data, error } = await sb()
         .from("tasks")
         .select("*")
+        .eq("workspace_id", ws!)
         .order("due_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data ?? [];
@@ -952,12 +964,15 @@ export function useWorkload() {
 
 // =================== ROUTINES (all + per project) ===================
 export function useAllRoutines() {
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useQuery({
-    queryKey: ["all-routines"],
+    queryKey: ["all-routines", ws],
+    enabled: !!ws,
     queryFn: async (): Promise<Routine[]> => {
       const { data, error } = await sb()
         .from("routines")
         .select("*")
+        .eq("workspace_id", ws!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -1014,6 +1029,7 @@ export interface RoutineFormInput {
 
 export function useUpsertRoutine() {
   const qc = useQueryClient();
+  const ws = useWorkspaceStore((s) => s.currentId);
   return useMutation({
     mutationFn: async (input: RoutineFormInput & { id?: string }) => {
       const { assignee_ids, id, ...routineCols } = input;
@@ -1028,7 +1044,7 @@ export function useUpsertRoutine() {
       } else {
         const { data, error } = await sb()
           .from("routines")
-          .insert({ ...routineCols, created_by: u.user?.id ?? null })
+          .insert({ ...routineCols, created_by: u.user?.id ?? null, workspace_id: ws })
           .select()
           .single();
         if (error) throw error;
@@ -1209,4 +1225,114 @@ export async function syncTaskToGoogle(
   } catch {
     // best-effort
   }
+}
+
+// =================== ESPACES DE TRAVAIL ===================
+export type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
+
+export function useWorkspaces() {
+  return useQuery({
+    queryKey: ["workspaces"],
+    queryFn: async (): Promise<Workspace[]> => {
+      const { data, error } = await sb()
+        .from("workspaces")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useCreateWorkspace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string): Promise<Workspace> => {
+      const { data: u } = await sb().auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) throw new Error("Non authentifié");
+      const { data: wsRow, error } = await sb()
+        .from("workspaces")
+        .insert({ name: name.trim(), created_by: uid })
+        .select()
+        .single();
+      if (error) throw error;
+      const { error: memErr } = await sb()
+        .from("workspace_members")
+        .insert({ workspace_id: wsRow.id, user_id: uid, role: "admin" });
+      if (memErr) throw memErr;
+      return wsRow;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workspaces"] }),
+  });
+}
+
+export interface WorkspaceMemberRow {
+  user_id: string;
+  role: "admin" | "member";
+  full_name: string | null;
+  avatar_url: string | null;
+  color: string;
+}
+
+export function useWorkspaceMembers(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ["workspace-members", workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async (): Promise<WorkspaceMemberRow[]> => {
+      if (!workspaceId) return [];
+      const { data, error } = await sb()
+        .from("workspace_members")
+        .select("user_id, role")
+        .eq("workspace_id", workspaceId);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (rows.length === 0) return [];
+      const ids = rows.map((r) => r.user_id);
+      const { data: profs } = await sb()
+        .from("profiles")
+        .select("id, full_name, avatar_url, color")
+        .in("id", ids);
+      const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+      return rows.map((r) => {
+        const p = byId.get(r.user_id);
+        return {
+          user_id: r.user_id,
+          role: r.role,
+          full_name: p?.full_name ?? null,
+          avatar_url: p?.avatar_url ?? null,
+          color: p?.color ?? "#94a3b8",
+        };
+      });
+    },
+  });
+}
+
+/** Crée un lien d'invitation et renvoie le token. */
+export function useCreateInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      workspaceId,
+      role,
+    }: {
+      workspaceId: string;
+      role: "admin" | "member";
+    }): Promise<string> => {
+      const { data: u } = await sb().auth.getUser();
+      const { data, error } = await sb()
+        .from("workspace_invites")
+        .insert({
+          workspace_id: workspaceId,
+          role,
+          created_by: u.user?.id ?? null,
+        })
+        .select("token")
+        .single();
+      if (error) throw error;
+      return data.token;
+    },
+    onSuccess: (_d, vars) =>
+      qc.invalidateQueries({ queryKey: ["workspace-invites", vars.workspaceId] }),
+  });
 }

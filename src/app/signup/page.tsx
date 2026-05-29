@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthHero } from "@/components/auth/auth-hero";
 import { Logo } from "@/components/brand/logo";
@@ -23,7 +24,9 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <AuthForm mode="signup" />
+          <Suspense fallback={null}>
+            <AuthForm mode="signup" />
+          </Suspense>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Déjà inscrit ?{" "}
