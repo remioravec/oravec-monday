@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { UserMenu } from "@/components/sidebar/user-menu";
+import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,6 +196,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Corps de la sidebar : démarre par un arrondi juste sous le logo */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-sidebar-border bg-muted/60">
+      {/* Sélecteur d'espace de travail */}
+      <WorkspaceSwitcher onNavigate={onNavigate} />
       {/* CTA primaire « Nouveau » (style Drive) */}
       <div className="px-2 pt-3">
         <DropdownMenu>

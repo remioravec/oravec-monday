@@ -203,18 +203,21 @@ export interface Database {
           name: string;
           position: number;
           created_at: string;
+          workspace_id: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           position?: number;
           created_at?: string;
+          workspace_id?: string | null;
         };
         Update: {
           id?: string;
           name?: string;
           position?: number;
           created_at?: string;
+          workspace_id?: string | null;
         };
         Relationships: [];
       };
@@ -231,6 +234,7 @@ export interface Database {
           recurrence_day_of_month: number | null;
           recurrence_time_of_day: string | null;
           created_at: string;
+          workspace_id: string | null;
         };
         Insert: {
           id?: string;
@@ -244,6 +248,7 @@ export interface Database {
           recurrence_day_of_month?: number | null;
           recurrence_time_of_day?: string | null;
           created_at?: string;
+          workspace_id?: string | null;
         };
         Update: {
           id?: string;
@@ -257,6 +262,7 @@ export interface Database {
           recurrence_day_of_month?: number | null;
           recurrence_time_of_day?: string | null;
           created_at?: string;
+          workspace_id?: string | null;
         };
         Relationships: [];
       };
@@ -277,6 +283,7 @@ export interface Database {
           google_event_id: string | null;
           google_calendar_id: string | null;
           google_synced_at: string | null;
+          workspace_id: string | null;
         };
         Insert: {
           id?: string;
@@ -294,6 +301,7 @@ export interface Database {
           google_event_id?: string | null;
           google_calendar_id?: string | null;
           google_synced_at?: string | null;
+          workspace_id?: string | null;
         };
         Update: {
           id?: string;
@@ -311,6 +319,7 @@ export interface Database {
           google_event_id?: string | null;
           google_calendar_id?: string | null;
           google_synced_at?: string | null;
+          workspace_id?: string | null;
         };
         Relationships: [];
       };
@@ -334,6 +343,7 @@ export interface Database {
           last_generated_date: string | null;
           created_by: string | null;
           created_at: string;
+          workspace_id: string | null;
         };
         Insert: {
           id?: string;
@@ -348,6 +358,7 @@ export interface Database {
           last_generated_date?: string | null;
           created_by?: string | null;
           created_at?: string;
+          workspace_id?: string | null;
         };
         Update: {
           id?: string;
@@ -361,6 +372,79 @@ export interface Database {
           active?: boolean;
           last_generated_date?: string | null;
           created_by?: string | null;
+          created_at?: string;
+          workspace_id?: string | null;
+        };
+        Relationships: [];
+      };
+      workspaces: {
+        Row: {
+          id: string;
+          name: string;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      workspace_members: {
+        Row: {
+          workspace_id: string;
+          user_id: string;
+          role: UserRole;
+          created_at: string;
+        };
+        Insert: {
+          workspace_id: string;
+          user_id: string;
+          role?: UserRole;
+          created_at?: string;
+        };
+        Update: {
+          workspace_id?: string;
+          user_id?: string;
+          role?: UserRole;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      workspace_invites: {
+        Row: {
+          id: string;
+          token: string;
+          workspace_id: string;
+          role: UserRole;
+          created_by: string | null;
+          expires_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token?: string;
+          workspace_id: string;
+          role?: UserRole;
+          created_by?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          workspace_id?: string;
+          role?: UserRole;
+          created_by?: string | null;
+          expires_at?: string | null;
           created_at?: string;
         };
         Relationships: [];

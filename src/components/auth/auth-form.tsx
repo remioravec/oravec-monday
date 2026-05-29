@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,10 @@ import { Label } from "@/components/ui/label";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Destination après connexion (ex. lien d'invitation /join/<token>).
+  const rawNext = searchParams.get("next");
+  const next = rawNext && rawNext.startsWith("/") ? rawNext : "/app";
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -24,7 +28,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           // access_type=offline + prompt=consent → on obtient un refresh_token
           // (nécessaire pour appeler Drive/Calendar côté serveur plus tard).
           scopes: GOOGLE_SCOPES,
-          redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
           queryParams: { access_type: "offline", prompt: "consent" },
         },
       });
@@ -64,7 +68,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         });
         if (error) throw error;
       }
-      router.replace("/app");
+      router.replace(next);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");

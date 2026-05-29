@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthHero } from "@/components/auth/auth-hero";
 import { Logo, LogoMark } from "@/components/brand/logo";
@@ -24,7 +25,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <AuthForm mode="login" />
+          <Suspense fallback={null}>
+            <AuthForm mode="login" />
+          </Suspense>
 
           <p className="mt-7 text-center text-xs text-muted-foreground">
             Contactez votre administrateur pour obtenir vos identifiants.
