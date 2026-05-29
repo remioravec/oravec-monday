@@ -251,6 +251,8 @@ export default function CalendarPage() {
         <DayView
           day={cursor}
           tasks={tasksByDate.get(format(cursor, "yyyy-MM-dd")) ?? []}
+          googleEvents={googleByDate.get(format(cursor, "yyyy-MM-dd")) ?? []}
+          teamEvents={teamByDate.get(format(cursor, "yyyy-MM-dd")) ?? []}
           projectsById={projectsById}
           onAdd={() => setQuickAdd({ date: cursor })}
         />
@@ -445,11 +447,15 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 function DayView({
   day,
   tasks,
+  googleEvents,
+  teamEvents,
   projectsById,
   onAdd,
 }: {
   day: Date;
   tasks: ReturnType<typeof useAllTasks>["data"] extends (infer T)[] | undefined ? T[] : never;
+  googleEvents: GoogleCalendarEvent[];
+  teamEvents: TeamEvent[];
   projectsById: Map<string, { id: string; name: string; color: string | null }>;
   onAdd: () => void;
 }) {
@@ -457,6 +463,48 @@ function DayView({
   const timed = tasks.filter((t) => !!t.time_of_day);
   const nowMinutes =
     isToday(day) ? new Date().getHours() * 60 + new Date().getMinutes() : null;
+
+  // Agenda (Google perso + équipe) normalisé en une seule liste pour la vue jour.
+  type AgendaItem = {
+    key: string;
+    title: string;
+    color: string;
+    allDay: boolean;
+    start: string;
+    end: string | null;
+    person: string | null;
+    href: string | null;
+  };
+  const agenda: AgendaItem[] = [
+    ...googleEvents.map((e) => ({
+      key: "g:" + e.calendarId + e.id,
+      title: e.title,
+      color: e.color ?? "#9ca3af",
+      allDay: e.allDay,
+      start: e.start,
+      end: e.end,
+      person: null,
+      href: e.htmlLink,
+    })),
+    ...teamEvents.map((e) => ({
+      key: "t:" + e.id,
+      title: e.title,
+      color: e.personColor,
+      allDay: e.allDay,
+      start: e.start,
+      end: e.end,
+      person: e.personName,
+      href: null,
+    })),
+  ];
+  const agendaAllDay = agenda.filter((a) => a.allDay);
+  const agendaTimed = agenda
+    .filter((a) => !a.allDay)
+    .sort((a, b) => +new Date(a.start) - +new Date(b.start));
+  const minutesOf = (iso: string) => {
+    const d = new Date(iso);
+    return d.getHours() * 60 + d.getMinutes();
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
@@ -504,6 +552,45 @@ function DayView({
         </div>
       )}
 
+      {agendaAllDay.length > 0 && (
+        <div className="border-b bg-muted/30 px-5 py-3">
+          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Users className="size-3" />
+            Agenda · journée entière ({agendaAllDay.length})
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            {agendaAllDay.map((a) => (
+              <li key={a.key}>
+                <a
+                  href={a.href ?? "#"}
+                  target={a.href ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border-l-2 bg-card px-2.5 py-1 text-xs hover:bg-muted/40"
+                  style={{ borderColor: a.color }}
+                  title={a.person ? `${a.person} — ${a.title}` : a.title}
+                >
+                  <span
+                    aria-hidden
+                    className="size-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: a.color }}
+                  />
+                  <span className="truncate text-muted-foreground">
+                    {a.person ? `${a.person} · ${a.title}` : a.title}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* En-têtes de colonnes (tâches à gauche, agenda à droite). */}
+      <div className="flex border-b bg-muted/20 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="w-16 shrink-0" />
+        <div className="flex-1 border-r px-3 py-1.5">Tâches</div>
+        <div className="flex-1 px-3 py-1.5">Agenda</div>
+      </div>
+
       <div className="relative max-h-[70vh] overflow-y-auto">
         <div className="relative" style={{ height: HOURS.length * HOUR_PX }}>
           {HOURS.map((h) => (
@@ -515,20 +602,83 @@ function DayView({
               <div className="w-16 shrink-0 px-2 pt-1 text-[10px] text-muted-foreground tabular-nums">
                 {String(h).padStart(2, "0")}:00
               </div>
-              <div className="flex-1" />
+              <div className="flex-1 border-l border-border/40" />
             </div>
           ))}
+
+          {/* Séparateur vertical entre la colonne tâches et la colonne agenda. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 top-0 w-px bg-border"
+            style={{ left: "calc(50% + 2rem)" }}
+          />
 
           {nowMinutes !== null && (
             <div
               aria-hidden
-              className="pointer-events-none absolute left-16 right-2 z-20 flex items-center"
+              className="pointer-events-none absolute left-16 right-2 z-30 flex items-center"
               style={{ top: (nowMinutes / 60) * HOUR_PX }}
             >
               <span className="size-2.5 rounded-full bg-red-500 shadow" />
               <span className="ml-0 h-px flex-1 bg-red-500" />
             </div>
           )}
+
+          {/* Colonne agenda (Google perso + équipe) — disponibilités. */}
+          {agendaTimed.map((a) => {
+            const startMin = minutesOf(a.start);
+            const endMin = a.end ? minutesOf(a.end) : startMin + 60;
+            const top = (startMin / 60) * HOUR_PX;
+            const height = Math.max(((endMin - startMin) / 60) * HOUR_PX, 28);
+            const body = (
+              <>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-medium text-foreground/80">
+                    {a.title}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span className="tabular-nums">
+                      {new Date(a.start).toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    {a.person && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate">{a.person}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+            const className =
+              "absolute right-2 z-10 flex items-center gap-2 overflow-hidden rounded-lg border-l-4 px-3 shadow-sm";
+            const style = {
+              top,
+              height,
+              left: "calc(50% + 2rem)",
+              borderLeftColor: a.color,
+              backgroundColor: `${a.color}1a`,
+            } as const;
+            return a.href ? (
+              <a
+                key={a.key}
+                href={a.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className + " hover:shadow-md"}
+                style={style}
+              >
+                {body}
+              </a>
+            ) : (
+              <div key={a.key} className={className} style={style}>
+                {body}
+              </div>
+            );
+          })}
 
           {timed.map((t) => {
             const proj = projectsById.get(t.project_id ?? "");
@@ -540,9 +690,10 @@ function DayView({
               <Link
                 key={t.id}
                 href={proj ? `/app/projects/${proj.id}` : "#"}
-                className="absolute left-16 right-2 z-10 flex h-12 items-center gap-2 overflow-hidden rounded-lg border-l-4 bg-card px-3 shadow-sm hover:shadow-md"
+                className="absolute left-16 z-10 flex h-12 items-center gap-2 overflow-hidden rounded-lg border-l-4 bg-card px-3 shadow-sm hover:shadow-md"
                 style={{
                   top,
+                  right: "calc(50% - 2rem + 4px)",
                   borderLeftColor: color,
                 }}
               >
