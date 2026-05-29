@@ -235,7 +235,7 @@ export default function ProjectPage({
         ) : tasks.length === 0 ? (
           <EmptyState onAdd={() => handleAdd()} />
         ) : (
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
+          <div className="mx-auto flex w-full max-w-[88rem] flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
             {groups.map((g) => (
               <GroupSection
                 key={g.key}

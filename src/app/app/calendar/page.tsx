@@ -32,6 +32,8 @@ import {
   useAllTasks,
   useCreateTask,
   useGoogleEvents,
+  useGoogleCalendars,
+  useUpdateGoogleCalendars,
   useProjects,
   syncTaskToGoogle,
   type GoogleCalendarEvent,
@@ -95,6 +97,11 @@ export default function CalendarPage() {
     }
     return map;
   }, [googleData]);
+
+  // Agendas connectés : cases à cocher pour afficher/masquer (lisibilité).
+  const { data: gcal } = useGoogleCalendars();
+  const updateCals = useUpdateGoogleCalendars();
+  const calendars = gcal?.connected ? gcal.calendars : [];
 
   function navigate(dir: -1 | 1) {
     setCursor((c) => {
@@ -169,6 +176,39 @@ export default function CalendarPage() {
           </div>
         </div>
       </header>
+
+      {calendars.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Agendas :</span>
+          {calendars.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() =>
+                updateCals.mutate({
+                  selected: { [c.google_calendar_id]: !c.selected },
+                })
+              }
+              className={[
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                c.selected
+                  ? "border-transparent bg-card shadow-sm"
+                  : "border-dashed text-muted-foreground opacity-60",
+              ].join(" ")}
+              title={c.selected ? "Masquer cet agenda" : "Afficher cet agenda"}
+            >
+              <span
+                aria-hidden
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: c.bg_color ?? "#9ca3af" }}
+              />
+              <span className="max-w-[140px] truncate">
+                {c.summary ?? c.google_calendar_id}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Chargement…</div>
