@@ -1336,3 +1336,36 @@ export function useCreateInvite() {
       qc.invalidateQueries({ queryKey: ["workspace-invites", vars.workspaceId] }),
   });
 }
+
+// =================== AGENDAS DE L'ÉQUIPE (lecture seule) ===================
+export interface TeamEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string | null;
+  allDay: boolean;
+  personName: string;
+  personColor: string;
+}
+
+/** Événements des agendas des autres membres de l'espace courant (dispos). */
+export function useTeamEvents(
+  timeMin: string | null,
+  timeMax: string | null,
+  enabled: boolean,
+) {
+  const ws = useWorkspaceStore((s) => s.currentId);
+  return useQuery({
+    queryKey: ["team-events", ws, timeMin, timeMax],
+    enabled: enabled && !!ws && !!timeMin && !!timeMax,
+    staleTime: 60_000,
+    queryFn: async (): Promise<TeamEvent[]> => {
+      const res = await fetch(
+        `/api/google/team-events?workspaceId=${ws}&timeMin=${encodeURIComponent(timeMin!)}&timeMax=${encodeURIComponent(timeMax!)}`,
+      );
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.events ?? [];
+    },
+  });
+}

@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,9 +35,11 @@ import {
   useGoogleEvents,
   useGoogleCalendars,
   useUpdateGoogleCalendars,
+  useTeamEvents,
   useProjects,
   syncTaskToGoogle,
   type GoogleCalendarEvent,
+  type TeamEvent,
 } from "@/lib/queries";
 import type { TaskStatus } from "@/lib/supabase/database.types";
 import { statusColor } from "@/components/tasks/status-pill";
@@ -102,6 +105,24 @@ export default function CalendarPage() {
   const { data: gcal } = useGoogleCalendars();
   const updateCals = useUpdateGoogleCalendars();
   const calendars = gcal?.connected ? gcal.calendars : [];
+
+  // Agendas de l'équipe (lecture seule, dispos des autres membres).
+  const [showTeam, setShowTeam] = useState(false);
+  const { data: teamEvents = [] } = useTeamEvents(
+    range.start.toISOString(),
+    range.end.toISOString(),
+    showTeam,
+  );
+  const teamByDate = useMemo(() => {
+    const map = new Map<string, TeamEvent[]>();
+    for (const ev of teamEvents) {
+      const key = format(parseISO(ev.start), "yyyy-MM-dd");
+      const arr = map.get(key) ?? [];
+      arr.push(ev);
+      map.set(key, arr);
+    }
+    return map;
+  }, [teamEvents]);
 
   function navigate(dir: -1 | 1) {
     setCursor((c) => {
@@ -177,8 +198,22 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {calendars.length > 0 && (
+      {(calendars.length > 0 || gcal?.connected) && (
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowTeam((v) => !v)}
+            className={[
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+              showTeam
+                ? "border-transparent bg-primary text-white shadow-sm"
+                : "border-dashed text-muted-foreground",
+            ].join(" ")}
+            title="Afficher les agendas de l'équipe (lecture seule)"
+          >
+            <Users className="size-3.5" />
+            Équipe
+          </button>
           <span className="text-xs font-medium text-muted-foreground">Agendas :</span>
           {calendars.map((c) => (
             <button
@@ -226,6 +261,7 @@ export default function CalendarPage() {
           view={view}
           tasksByDate={tasksByDate}
           googleByDate={googleByDate}
+          teamByDate={teamByDate}
           projectsById={projectsById}
           onAddOnDate={(d) => setQuickAdd({ date: d })}
         />
@@ -268,6 +304,7 @@ function MonthOrWeekGrid({
   view,
   tasksByDate,
   googleByDate,
+  teamByDate,
   projectsById,
   onAddOnDate,
 }: {
@@ -276,6 +313,7 @@ function MonthOrWeekGrid({
   view: "week" | "month";
   tasksByDate: Map<string, ReturnType<typeof useAllTasks>["data"] extends (infer T)[] | undefined ? T[] : never>;
   googleByDate: Map<string, GoogleCalendarEvent[]>;
+  teamByDate: Map<string, TeamEvent[]>;
   projectsById: Map<string, { id: string; name: string; color: string | null }>;
   onAddOnDate: (d: Date) => void;
 }) {
@@ -295,6 +333,7 @@ function MonthOrWeekGrid({
           const key = format(d, "yyyy-MM-dd");
           const items = tasksByDate.get(key) ?? [];
           const gEvents = googleByDate.get(key) ?? [];
+          const tEvents = teamByDate.get(key) ?? [];
           return (
             <div
               key={key}
@@ -359,6 +398,30 @@ function MonthOrWeekGrid({
                       >
                         <span className="truncate text-muted-foreground">{ev.title}</span>
                       </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {tEvents.length > 0 && (
+                <ul className="mt-0.5 flex flex-col gap-0.5">
+                  {tEvents.slice(0, view === "week" ? 5 : 2).map((ev) => (
+                    <li
+                      key={ev.id}
+                      className="flex items-center gap-1 truncate rounded border-l-2 px-1 py-0.5 text-[11px]"
+                      style={{
+                        borderColor: ev.personColor,
+                        backgroundColor: `${ev.personColor}14`,
+                      }}
+                      title={`${ev.personName} — ${ev.title}`}
+                    >
+                      <span
+                        aria-hidden
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: ev.personColor }}
+                      />
+                      <span className="truncate text-muted-foreground">
+                        {ev.personName}
+                      </span>
                     </li>
                   ))}
                 </ul>
