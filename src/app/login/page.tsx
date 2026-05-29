@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthHero } from "@/components/auth/auth-hero";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 
 export default function LoginPage() {
   return (
@@ -13,19 +13,20 @@ export default function LoginPage() {
           <Logo />
         </div>
 
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-[0_8px_30px_-10px_rgba(15,23,42,0.15)] sm:p-10">
-          <div className="mb-7 flex flex-col items-center text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <div className="w-full max-w-lg rounded-3xl border border-border bg-card p-8 shadow-[0_10px_40px_-12px_rgba(15,23,42,0.18)] sm:p-12">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <LogoMark className="mb-5 size-14" />
+            <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
               Bienvenue <span aria-hidden>👋</span>
             </h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
+            <p className="mt-2 text-[15px] text-muted-foreground">
               Connectez-vous pour accéder à votre dashboard
             </p>
           </div>
 
           <AuthForm mode="login" />
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <p className="mt-7 text-center text-xs text-muted-foreground">
             Contactez votre administrateur pour obtenir vos identifiants.
           </p>
           <p className="mt-2 text-center text-sm text-muted-foreground">

@@ -87,7 +87,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <Button
         type="submit"
         disabled={loading}
-        className="mt-1 h-11 w-full rounded-xl bg-primary text-base font-medium text-white shadow-sm hover:bg-primary/90"
+        className="mt-1 h-12 w-full rounded-xl bg-primary text-base font-medium text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.99]"
       >
         {loading ? (
           "…"
@@ -119,7 +119,7 @@ function Field({ label, icon: Icon, id, className, ...inputProps }: FieldProps) 
           id={id}
           {...inputProps}
           className={
-            "h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50 " +
+            "h-12 w-full rounded-xl border border-input bg-background pl-11 pr-3 text-[15px] text-foreground placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50 " +
             (className ?? "")
           }
         />
