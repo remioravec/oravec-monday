@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronUp, GraduationCap, LogOut, ShieldCheck, UserCog } from "lucide-react";
+import {
+  ChevronUp,
+  Download,
+  GraduationCap,
+  LogOut,
+  ShieldCheck,
+  UserCog,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,10 +21,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMyProfile, useSignOut } from "@/lib/queries";
 import { triggerOnboarding } from "@/components/onboarding/onboarding-host";
+import { usePwaInstall } from "@/lib/pwa-install";
+import { isIOS, isStandalone } from "@/lib/push";
 
 export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me, isLoading } = useMyProfile();
   const signOut = useSignOut();
+  const { canInstall, install } = usePwaInstall();
+  // Déjà installée (mode plein écran) → inutile de proposer l'installation.
+  const showInstall = !isStandalone();
+
+  async function handleInstall() {
+    if (canInstall) {
+      const outcome = await install();
+      if (outcome === "accepted") toast.success("Application installée");
+      return;
+    }
+    if (isIOS()) {
+      toast.info(
+        "Sur iPhone : appuie sur Partager, puis « Sur l'écran d'accueil » pour installer l'app.",
+        { duration: 8000 },
+      );
+      return;
+    }
+    toast.info(
+      "Utilise le menu de ton navigateur (⋮ → Installer l'application) pour l'ajouter à ton appareil.",
+      { duration: 8000 },
+    );
+  }
 
   if (isLoading || !me) {
     return (
@@ -102,6 +133,12 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
+        {showInstall && (
+          <DropdownMenuItem onClick={handleInstall}>
+            <Download className="size-3.5" />
+            Installer l&apos;application
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => triggerOnboarding()}>
           <GraduationCap className="size-3.5" />
           Revoir le tutoriel
