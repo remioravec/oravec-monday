@@ -472,9 +472,13 @@ export function useUpdateTask(projectId: string) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(qk.tasks(projectId), ctx.prev);
     },
-    onSettled: () => {
+    onSettled: (_d, _e, vars) => {
       qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
       qc.invalidateQueries({ queryKey: qk.workload });
+      // Sync Google Agenda si une donnée calendrier a changé (best-effort).
+      if ("due_date" in vars || "time_of_day" in vars || "title" in vars) {
+        void syncTaskToGoogle(vars.id, "push");
+      }
     },
   });
 }
@@ -844,11 +848,47 @@ export function useUploadAttachment(taskId: string) {
   });
 }
 
+/** Enregistre un fichier choisi via le Google Picker comme pièce jointe Drive. */
+export function useAddDriveAttachment(taskId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: {
+      id: string;
+      name: string;
+      url: string;
+      mimeType: string | null;
+      sizeBytes: number | null;
+    }) => {
+      const { data: u } = await sb().auth.getUser();
+      const { error } = await sb()
+        .from("task_attachments")
+        .insert({
+          task_id: taskId,
+          source: "drive",
+          drive_file_id: file.id,
+          external_url: file.url,
+          file_name: file.name,
+          file_size: file.sizeBytes,
+          mime_type: file.mimeType,
+          uploaded_by: u.user?.id ?? null,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["task-attachments", taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks-attachment-counts"] });
+    },
+  });
+}
+
 export function useDeleteAttachment(taskId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (attachment: TaskAttachment) => {
-      await sb().storage.from("attachments").remove([attachment.storage_path]);
+      // Les pièces jointes Drive n'ont pas de fichier dans le Storage.
+      if (attachment.source !== "drive" && attachment.storage_path) {
+        await sb().storage.from("attachments").remove([attachment.storage_path]);
+      }
       const { error } = await sb()
         .from("task_attachments")
         .delete()
@@ -1062,4 +1102,97 @@ export function useRealtimeProfiles() {
       client.removeChannel(channel);
     };
   }, [qc]);
+}
+
+// =================== GOOGLE INTEGRATION (client) ===================
+export interface GoogleCalendarEvent {
+  id: string;
+  calendarId: string;
+  title: string;
+  color: string | null;
+  start: string;
+  end: string | null;
+  allDay: boolean;
+  htmlLink: string | null;
+}
+
+export interface GoogleCalendarRow {
+  id: string;
+  google_calendar_id: string;
+  summary: string | null;
+  bg_color: string | null;
+  selected: boolean;
+}
+
+/** Événements Google des agendas sélectionnés, sur une plage (vue calendrier). */
+export function useGoogleEvents(timeMin: string | null, timeMax: string | null) {
+  return useQuery({
+    queryKey: ["google-events", timeMin, timeMax],
+    enabled: !!timeMin && !!timeMax,
+    staleTime: 60_000,
+    queryFn: async (): Promise<{ connected: boolean; events: GoogleCalendarEvent[] }> => {
+      const res = await fetch(
+        `/api/google/events?timeMin=${encodeURIComponent(timeMin!)}&timeMax=${encodeURIComponent(timeMax!)}`,
+      );
+      if (!res.ok) return { connected: false, events: [] };
+      return res.json();
+    },
+  });
+}
+
+/** Liste des agendas Google connectés (+ statut de connexion). */
+export function useGoogleCalendars() {
+  return useQuery({
+    queryKey: ["google-calendars"],
+    queryFn: async (): Promise<{
+      connected: boolean;
+      email: string | null;
+      writeCalendarId: string | null;
+      calendars: GoogleCalendarRow[];
+    }> => {
+      const res = await fetch("/api/google/calendars");
+      if (!res.ok) throw new Error("Chargement des agendas échoué");
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateGoogleCalendars() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      selected?: Record<string, boolean>;
+      writeCalendarId?: string | null;
+    }) => {
+      const res = await fetch("/api/google/calendars", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Mise à jour échouée");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["google-calendars"] });
+      qc.invalidateQueries({ queryKey: ["google-events"] });
+    },
+  });
+}
+
+/**
+ * Pousse/maj/supprime l'événement Google d'une tâche (best-effort : ne lève pas
+ * si l'utilisateur n'a pas connecté Google).
+ */
+export async function syncTaskToGoogle(
+  taskId: string,
+  action: "push" | "pull" | "delete" = "push",
+): Promise<void> {
+  try {
+    await fetch("/api/google/tasks/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId, action }),
+    });
+  } catch {
+    // best-effort
+  }
 }

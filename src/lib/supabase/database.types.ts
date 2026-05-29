@@ -18,6 +18,7 @@ export type TaskStatus = "a_faire" | "en_cours" | "fait";
 export type RoutineFrequency = "daily" | "weekly" | "monthly";
 export type UserRole = "admin" | "member";
 export type HiddenItemKind = "folder" | "project" | "task";
+export type AttachmentSource = "storage" | "drive";
 
 export interface Database {
   public: {
@@ -137,32 +138,41 @@ export interface Database {
         Row: {
           id: string;
           task_id: string;
-          storage_path: string;
+          storage_path: string | null;
           file_name: string;
           file_size: number | null;
           mime_type: string | null;
           uploaded_by: string | null;
           created_at: string;
+          source: AttachmentSource;
+          external_url: string | null;
+          drive_file_id: string | null;
         };
         Insert: {
           id?: string;
           task_id: string;
-          storage_path: string;
+          storage_path?: string | null;
           file_name: string;
           file_size?: number | null;
           mime_type?: string | null;
           uploaded_by?: string | null;
           created_at?: string;
+          source?: AttachmentSource;
+          external_url?: string | null;
+          drive_file_id?: string | null;
         };
         Update: {
           id?: string;
           task_id?: string;
-          storage_path?: string;
+          storage_path?: string | null;
           file_name?: string;
           file_size?: number | null;
           mime_type?: string | null;
           uploaded_by?: string | null;
           created_at?: string;
+          source?: AttachmentSource;
+          external_url?: string | null;
+          drive_file_id?: string | null;
         };
         Relationships: [];
       };
@@ -264,6 +274,9 @@ export interface Database {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          google_event_id: string | null;
+          google_calendar_id: string | null;
+          google_synced_at: string | null;
         };
         Insert: {
           id?: string;
@@ -278,6 +291,9 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          google_event_id?: string | null;
+          google_calendar_id?: string | null;
+          google_synced_at?: string | null;
         };
         Update: {
           id?: string;
@@ -292,6 +308,9 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          google_event_id?: string | null;
+          google_calendar_id?: string | null;
+          google_synced_at?: string | null;
         };
         Relationships: [];
       };
@@ -350,6 +369,75 @@ export interface Database {
         Row: { routine_id: string; user_id: string };
         Insert: { routine_id: string; user_id: string };
         Update: { routine_id?: string; user_id?: string };
+        Relationships: [];
+      };
+      google_connections: {
+        Row: {
+          user_id: string;
+          google_email: string | null;
+          access_token: string | null;
+          refresh_token: string | null;
+          token_expires_at: string | null;
+          scopes: string | null;
+          write_calendar_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          google_email?: string | null;
+          access_token?: string | null;
+          refresh_token?: string | null;
+          token_expires_at?: string | null;
+          scopes?: string | null;
+          write_calendar_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          google_email?: string | null;
+          access_token?: string | null;
+          refresh_token?: string | null;
+          token_expires_at?: string | null;
+          scopes?: string | null;
+          write_calendar_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      google_calendars: {
+        Row: {
+          id: string;
+          user_id: string;
+          google_calendar_id: string;
+          summary: string | null;
+          bg_color: string | null;
+          selected: boolean;
+          sync_token: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          google_calendar_id: string;
+          summary?: string | null;
+          bg_color?: string | null;
+          selected?: boolean;
+          sync_token?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          google_calendar_id?: string;
+          summary?: string | null;
+          bg_color?: string | null;
+          selected?: boolean;
+          sync_token?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
     };

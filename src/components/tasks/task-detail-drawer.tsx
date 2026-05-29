@@ -22,6 +22,7 @@ import {
 import { StatusPill } from "@/components/tasks/status-pill";
 import {
   getAttachmentUrl,
+  useAddDriveAttachment,
   useDeleteAttachment,
   useTaskAttachments,
   useUpdateTask,
@@ -29,6 +30,7 @@ import {
   type Task,
   type TaskAttachment,
 } from "@/lib/queries";
+import { openDrivePicker } from "@/lib/google/picker";
 import type { TaskStatus } from "@/lib/supabase/database.types";
 
 export function TaskDetailDrawer({
@@ -65,10 +67,35 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
   const update = useUpdateTask(projectId);
   const { data: attachments = [] } = useTaskAttachments(task.id);
   const upload = useUploadAttachment(task.id);
+  const addDrive = useAddDriveAttachment(task.id);
   const remove = useDeleteAttachment(task.id);
 
   const [description, setDescription] = useState(task.description ?? "");
   const [savingDesc, setSavingDesc] = useState(false);
+  const [pickingDrive, setPickingDrive] = useState(false);
+
+  async function handlePickDrive() {
+    setPickingDrive(true);
+    try {
+      const res = await fetch("/api/google/token");
+      if (res.status === 409) {
+        toast.error("Connecte d'abord ton compte Google (page Profil).");
+        return;
+      }
+      if (!res.ok) throw new Error("Token Google indisponible");
+      const { accessToken } = (await res.json()) as { accessToken: string };
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+      if (!apiKey) throw new Error("Clé API Google manquante (NEXT_PUBLIC_GOOGLE_API_KEY)");
+
+      const files = await openDrivePicker({ accessToken, apiKey });
+      for (const f of files) await addDrive.mutateAsync(f);
+      if (files.length > 0) toast.success(`${files.length} fichier(s) Drive ajouté(s)`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sélection Drive échouée");
+    } finally {
+      setPickingDrive(false);
+    }
+  }
 
   async function saveDescription() {
     setSavingDesc(true);
@@ -99,6 +126,16 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
   }
 
   async function handleDownload(a: TaskAttachment) {
+    // Pièce jointe Drive : on ouvre directement le lien Google Drive.
+    if (a.source === "drive") {
+      if (a.external_url) window.open(a.external_url, "_blank");
+      else toast.error("Lien Drive introuvable");
+      return;
+    }
+    if (!a.storage_path) {
+      toast.error("Lien introuvable");
+      return;
+    }
     const { data, error } = await getAttachmentUrl(a.storage_path);
     if (error || !data) {
       toast.error("Lien introuvable");
@@ -188,25 +225,40 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
             Pièces jointes
             <span className="text-xs text-muted-foreground">({attachments.length})</span>
           </h3>
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-                e.target.value = "";
-              }}
-            />
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted">
-              {upload.isPending ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handlePickDrive}
+              disabled={pickingDrive}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+            >
+              {pickingDrive ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
-                <Paperclip className="size-3.5" />
+                <FileText className="size-3.5 text-emerald-600" />
               )}
-              Ajouter
-            </span>
-          </label>
+              Drive
+            </button>
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted">
+                {upload.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Paperclip className="size-3.5" />
+                )}
+                Ajouter
+              </span>
+            </label>
+          </div>
         </div>
         {attachments.length === 0 ? (
           <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center text-xs italic text-muted-foreground">
@@ -219,13 +271,24 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
                 key={a.id}
                 className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 shadow-sm"
               >
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                <span
+                  className={
+                    "grid size-8 shrink-0 place-items-center rounded-lg " +
+                    (a.source === "drive"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-accent text-accent-foreground")
+                  }
+                >
                   <FileText className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{a.file_name}</div>
                   <div className="text-[11px] text-muted-foreground tabular-nums">
-                    {a.file_size ? `${Math.round(a.file_size / 1024)} Ko` : "—"}
+                    {a.source === "drive"
+                      ? "Google Drive"
+                      : a.file_size
+                        ? `${Math.round(a.file_size / 1024)} Ko`
+                        : "—"}
                   </div>
                 </div>
                 <Button

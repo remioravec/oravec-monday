@@ -14,6 +14,7 @@ import {
   type Profile,
 } from "@/lib/queries";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
+import { GoogleCalendarsPanel } from "@/components/settings/google-calendars-panel";
 
 const COLORS = [
   "#2563eb",
@@ -51,6 +52,7 @@ export default function ProfileSettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
       <ProfileForm key={me.id} me={me} />
+      <GoogleCalendarsPanel />
       <NotificationsPanel />
     </div>
   );

@@ -28,7 +28,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useAllTasks, useCreateTask, useProjects } from "@/lib/queries";
+import {
+  useAllTasks,
+  useCreateTask,
+  useGoogleEvents,
+  useProjects,
+  syncTaskToGoogle,
+  type GoogleCalendarEvent,
+} from "@/lib/queries";
 import type { TaskStatus } from "@/lib/supabase/database.types";
 import { statusColor } from "@/components/tasks/status-pill";
 
@@ -72,6 +79,22 @@ export default function CalendarPage() {
     }
     return map;
   }, [tasks]);
+
+  // Événements Google Agenda sur la plage visible (disponibilités).
+  const { data: googleData } = useGoogleEvents(
+    range.start.toISOString(),
+    range.end.toISOString(),
+  );
+  const googleByDate = useMemo(() => {
+    const map = new Map<string, GoogleCalendarEvent[]>();
+    for (const ev of googleData?.events ?? []) {
+      const key = format(parseISO(ev.start), "yyyy-MM-dd");
+      const arr = map.get(key) ?? [];
+      arr.push(ev);
+      map.set(key, arr);
+    }
+    return map;
+  }, [googleData]);
 
   function navigate(dir: -1 | 1) {
     setCursor((c) => {
@@ -162,6 +185,7 @@ export default function CalendarPage() {
           cursor={cursor}
           view={view}
           tasksByDate={tasksByDate}
+          googleByDate={googleByDate}
           projectsById={projectsById}
           onAddOnDate={(d) => setQuickAdd({ date: d })}
         />
@@ -178,12 +202,14 @@ export default function CalendarPage() {
           onClose={() => setQuickAdd(null)}
           onCreate={async (input) => {
             try {
-              await createTask.mutateAsync({
+              const created = await createTask.mutateAsync({
                 project_id: input.projectId,
                 title: input.title,
                 position: 0,
                 due_date: input.date.toISOString(),
               });
+              // Crée l'événement dans Google Agenda (best-effort).
+              if (created?.id) void syncTaskToGoogle(created.id, "push");
               toast.success("Tâche créée");
               setQuickAdd(null);
             } catch (e) {
@@ -201,6 +227,7 @@ function MonthOrWeekGrid({
   cursor,
   view,
   tasksByDate,
+  googleByDate,
   projectsById,
   onAddOnDate,
 }: {
@@ -208,6 +235,7 @@ function MonthOrWeekGrid({
   cursor: Date;
   view: "week" | "month";
   tasksByDate: Map<string, ReturnType<typeof useAllTasks>["data"] extends (infer T)[] | undefined ? T[] : never>;
+  googleByDate: Map<string, GoogleCalendarEvent[]>;
   projectsById: Map<string, { id: string; name: string; color: string | null }>;
   onAddOnDate: (d: Date) => void;
 }) {
@@ -226,6 +254,7 @@ function MonthOrWeekGrid({
           const today = isToday(d);
           const key = format(d, "yyyy-MM-dd");
           const items = tasksByDate.get(key) ?? [];
+          const gEvents = googleByDate.get(key) ?? [];
           return (
             <div
               key={key}
@@ -275,6 +304,25 @@ function MonthOrWeekGrid({
                   );
                 })}
               </ul>
+              {/* Événements Google Agenda (disponibilités) */}
+              {gEvents.length > 0 && (
+                <ul className="mt-0.5 flex flex-col gap-0.5">
+                  {gEvents.slice(0, view === "week" ? 6 : 2).map((ev) => (
+                    <li key={ev.calendarId + ev.id}>
+                      <a
+                        href={ev.htmlLink ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 truncate rounded border-l-2 bg-muted/40 px-1 py-0.5 text-[11px] italic hover:bg-muted"
+                        style={{ borderColor: ev.color ?? "#9ca3af" }}
+                        title={ev.title}
+                      >
+                        <span className="truncate text-muted-foreground">{ev.title}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {items.length > (view === "week" ? 8 : 3) && (
                 <span className="absolute bottom-1 right-2 text-[10px] text-muted-foreground">
                   +{items.length - (view === "week" ? 8 : 3)}
