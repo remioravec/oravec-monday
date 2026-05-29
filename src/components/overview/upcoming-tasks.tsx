@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarClock, ListChecks } from "lucide-react";
+import { CalendarClock, Clock, ListChecks } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/tasks/status-pill";
 import type { Profile, Task } from "@/lib/queries";
@@ -135,18 +135,26 @@ function TasksColumn({
                   className="flex min-w-0 flex-1 flex-col gap-0.5"
                 >
                   <span className="truncate text-sm font-medium">{t.title}</span>
-                  {proj && (
-                    <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <span
-                        aria-hidden
-                        className="size-1.5 rounded-full"
-                        style={{ backgroundColor: proj.color ?? "#94a3b8" }}
-                      />
-                      {proj.name}
-                      <span className="text-muted-foreground/60">·</span>
-                      {format(parseISO(t.due_date!), "EEE d MMM", { locale: fr })}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    {proj && (
+                      <>
+                        <span
+                          aria-hidden
+                          className="size-1.5 rounded-full"
+                          style={{ backgroundColor: proj.color ?? "#94a3b8" }}
+                        />
+                        {proj.name}
+                        <span className="text-muted-foreground/60">·</span>
+                      </>
+                    )}
+                    {format(parseISO(t.due_date!), "EEE d MMM", { locale: fr })}
+                    {t.time_of_day && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground/80">
+                        <Clock className="size-3" />
+                        {t.time_of_day.slice(0, 5)}
+                      </span>
+                    )}
+                  </span>
                 </Link>
                 <div className="flex shrink-0 items-center gap-2">
                   <StatusPill
