@@ -92,11 +92,11 @@ export default function CalendarPage() {
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid size-9 place-items-center rounded-xl bg-accent text-accent-foreground">
+          <span className="grid size-11 place-items-center rounded-2xl bg-accent text-accent-foreground">
             <CalendarDays className="size-5" />
           </span>
           <div>
-            <h1 className="text-xl font-semibold capitalize">{headerLabel}</h1>
+            <h1 className="text-2xl font-semibold capitalize">{headerLabel}</h1>
             <p className="text-xs text-muted-foreground">
               Clique sur un jour pour créer une tâche.
             </p>
