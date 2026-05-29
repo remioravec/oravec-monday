@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { enablePush, disablePush, PushError } from "@/lib/push";
 import { useNotifPrefs, useUpdateNotifPrefs, type NotifPrefs } from "@/lib/queries";
 
 export function NotificationsPanel() {
@@ -23,53 +23,27 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
   const [registering, setRegistering] = useState(false);
 
   async function handleEnable() {
-    if (typeof Notification === "undefined") {
-      toast.error("Notifications non supportées sur ce navigateur");
-      return;
-    }
     setRegistering(true);
     try {
-      const supabase = createClient();
-      const perm = await Notification.requestPermission();
+      const perm = await enablePush();
       setPermission(perm);
       if (perm !== "granted") {
         toast.error("Permission refusée");
         return;
       }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapid) {
-        toast.warning(
-          "Clés VAPID non configurées. Service worker enregistré, push désactivé.",
-        );
-        await update.mutateAsync({ push_enabled: true });
-        return;
-      }
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapid),
-      });
-      const json = sub.toJSON() as {
-        endpoint?: string;
-        keys?: { p256dh?: string; auth?: string };
-      };
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user?.id) throw new Error("Non authentifié");
-      const { error } = await supabase.from("push_subscriptions").upsert(
-        {
-          user_id: u.user.id,
-          endpoint: json.endpoint!,
-          p256dh: json.keys?.p256dh ?? "",
-          auth: json.keys?.auth ?? "",
-          user_agent: navigator.userAgent,
-        },
-        { onConflict: "endpoint" },
-      );
-      if (error) throw error;
       await update.mutateAsync({ push_enabled: true });
       toast.success("Notifications activées sur cet appareil");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur");
+      // Cas particuliers (iOS non installé, VAPID absent) → message guidé.
+      if (err instanceof PushError) {
+        toast.warning(err.message);
+        // SW peut être enregistré sans abonnement : on garde la préf active.
+        if (err.message.startsWith("Clés VAPID")) {
+          await update.mutateAsync({ push_enabled: true });
+        }
+      } else {
+        toast.error(err instanceof Error ? err.message : "Erreur");
+      }
     } finally {
       setRegistering(false);
     }
@@ -77,17 +51,8 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
 
   async function handleDisable() {
     try {
-      const supabase = createClient();
       await update.mutateAsync({ push_enabled: false });
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      if (sub) {
-        await sub.unsubscribe();
-        await supabase
-          .from("push_subscriptions")
-          .delete()
-          .eq("endpoint", sub.endpoint);
-      }
+      await disablePush();
       toast.success("Notifications désactivées");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
@@ -187,13 +152,4 @@ function ToggleRow({
       <span className="text-sm">{label}</span>
     </label>
   );
-}
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
 }
