@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { AppSidebar } from "./app-sidebar";
+import { MobileNav } from "./mobile-nav";
 import { Logo } from "@/components/brand/logo";
+import { NotificationPrompt } from "@/components/notifications/notification-prompt";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { useRealtimeProfiles } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -51,8 +53,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
         </header>
 
-        <main className="flex-1 overflow-x-auto">{children}</main>
+        {/* pb pour ne pas masquer le contenu derrière la barre basse mobile */}
+        <main className="flex-1 overflow-x-auto pb-16 md:pb-0">{children}</main>
       </div>
+
+      {/* Invite à activer les notifications (mobile) */}
+      <NotificationPrompt />
+
+      {/* Barre de navigation basse (mobile) */}
+      <MobileNav onOpenMenu={() => setMobileOpen(true)} />
+
       <OnboardingHost />
     </div>
   );
