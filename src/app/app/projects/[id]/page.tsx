@@ -78,13 +78,29 @@ export default function ProjectPage({
 
   const filteredTasks = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return tasks.filter((t) => {
+    const list = tasks.filter((t) => {
       if (q && !t.title.toLowerCase().includes(q)) return false;
       if (assigneeFilter.length > 0) {
         const ids = assigneesMap.get(t.id) ?? [];
         if (!ids.some((uid) => assigneeFilter.includes(uid))) return false;
       }
       return true;
+    });
+    // Ordre d'échéance : date la plus proche d'abord ; sans date → à la fin.
+    return list.sort((a, b) => {
+      const da = a.due_date;
+      const db = b.due_date;
+      if (da && db) {
+        if (da !== db) return da < db ? -1 : 1;
+      } else if (da) {
+        return -1;
+      } else if (db) {
+        return 1;
+      }
+      const ta = a.time_of_day ?? "99:99";
+      const tb = b.time_of_day ?? "99:99";
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return (a.position ?? 0) - (b.position ?? 0);
     });
   }, [tasks, search, assigneeFilter, assigneesMap]);
 

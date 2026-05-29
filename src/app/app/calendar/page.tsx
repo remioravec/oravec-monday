@@ -4,19 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   addDays,
-  addMonths,
-  addWeeks,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
   format,
-  isSameMonth,
   isToday,
   parseISO,
-  startOfMonth,
-  startOfWeek,
-  subMonths,
-  subWeeks,
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -44,14 +34,11 @@ import {
 import type { TaskStatus } from "@/lib/supabase/database.types";
 import { statusColor } from "@/components/tasks/status-pill";
 
-type ViewMode = "day" | "week" | "month";
-
 export default function CalendarPage() {
   const { data: tasks = [], isLoading } = useAllTasks();
   const { data: projects = [] } = useProjects();
   const createTask = useCreateTask();
   const [cursor, setCursor] = useState(new Date());
-  const [view, setView] = useState<ViewMode>("month");
   const [quickAdd, setQuickAdd] = useState<{ date: Date } | null>(null);
 
   const projectsById = useMemo(
@@ -59,19 +46,11 @@ export default function CalendarPage() {
     [projects],
   );
 
-  const range = useMemo(() => {
-    if (view === "day") {
-      return { start: cursor, end: cursor, days: [cursor] };
-    }
-    if (view === "week") {
-      const start = startOfWeek(cursor, { weekStartsOn: 1 });
-      const end = endOfWeek(cursor, { weekStartsOn: 1 });
-      return { start, end, days: eachDayOfInterval({ start, end }) };
-    }
-    const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
-    const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
-    return { start, end, days: eachDayOfInterval({ start, end }) };
-  }, [cursor, view]);
+  // Vue jour uniquement : la plage couvre la journée affichée.
+  const range = useMemo(
+    () => ({ start: cursor, end: cursor }),
+    [cursor],
+  );
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, typeof tasks>();
@@ -125,19 +104,10 @@ export default function CalendarPage() {
   }, [teamEvents]);
 
   function navigate(dir: -1 | 1) {
-    setCursor((c) => {
-      if (view === "day") return addDays(c, dir);
-      if (view === "week") return dir > 0 ? addWeeks(c, 1) : subWeeks(c, 1);
-      return dir > 0 ? addMonths(c, 1) : subMonths(c, 1);
-    });
+    setCursor((c) => addDays(c, dir));
   }
 
-  const headerLabel =
-    view === "day"
-      ? format(cursor, "EEEE d MMMM yyyy", { locale: fr })
-      : view === "week"
-        ? `${format(range.start, "d MMM", { locale: fr })} – ${format(range.end, "d MMM yyyy", { locale: fr })}`
-        : format(cursor, "MMMM yyyy", { locale: fr });
+  const headerLabel = format(cursor, "EEEE d MMMM yyyy", { locale: fr });
 
   return (
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
@@ -154,22 +124,6 @@ export default function CalendarPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border bg-card p-0.5 shadow-sm">
-            {(["day", "week", "month"] as ViewMode[]).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  view === v
-                    ? "bg-primary text-white"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
-              </button>
-            ))}
-          </div>
           <div className="flex items-center gap-1">
             <Button
               size="icon-sm"
@@ -247,7 +201,7 @@ export default function CalendarPage() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Chargement…</div>
-      ) : view === "day" ? (
+      ) : (
         <DayView
           day={cursor}
           tasks={tasksByDate.get(format(cursor, "yyyy-MM-dd")) ?? []}
@@ -255,17 +209,6 @@ export default function CalendarPage() {
           teamEvents={teamByDate.get(format(cursor, "yyyy-MM-dd")) ?? []}
           projectsById={projectsById}
           onAdd={() => setQuickAdd({ date: cursor })}
-        />
-      ) : (
-        <MonthOrWeekGrid
-          days={range.days}
-          cursor={cursor}
-          view={view}
-          tasksByDate={tasksByDate}
-          googleByDate={googleByDate}
-          teamByDate={teamByDate}
-          projectsById={projectsById}
-          onAddOnDate={(d) => setQuickAdd({ date: d })}
         />
       )}
 
@@ -296,147 +239,6 @@ export default function CalendarPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function MonthOrWeekGrid({
-  days,
-  cursor,
-  view,
-  tasksByDate,
-  googleByDate,
-  teamByDate,
-  projectsById,
-  onAddOnDate,
-}: {
-  days: Date[];
-  cursor: Date;
-  view: "week" | "month";
-  tasksByDate: Map<string, ReturnType<typeof useAllTasks>["data"] extends (infer T)[] | undefined ? T[] : never>;
-  googleByDate: Map<string, GoogleCalendarEvent[]>;
-  teamByDate: Map<string, TeamEvent[]>;
-  projectsById: Map<string, { id: string; name: string; color: string | null }>;
-  onAddOnDate: (d: Date) => void;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <div className="grid grid-cols-7 border-b bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
-        {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
-          <div key={i} className="px-2 py-2 text-center">
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7">
-        {days.map((d) => {
-          const inMonth = view === "week" || isSameMonth(d, cursor);
-          const today = isToday(d);
-          const key = format(d, "yyyy-MM-dd");
-          const items = tasksByDate.get(key) ?? [];
-          const gEvents = googleByDate.get(key) ?? [];
-          const tEvents = teamByDate.get(key) ?? [];
-          return (
-            <div
-              key={key}
-              className={[
-                "group relative min-h-24 border-b border-r p-1.5 last:border-r-0 sm:min-h-28 sm:p-2",
-                view === "week" ? "min-h-40 sm:min-h-56" : "",
-                inMonth ? "bg-card" : "bg-muted/20 text-muted-foreground/60",
-              ].join(" ")}
-            >
-              <div className="mb-1 flex items-center justify-between">
-                <span
-                  className={[
-                    "inline-flex size-6 items-center justify-center rounded-full text-xs font-medium tabular-nums",
-                    today ? "bg-primary text-white" : "",
-                  ].join(" ")}
-                >
-                  {format(d, "d")}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onAddOnDate(d)}
-                  className="grid size-5 place-items-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                  aria-label="Ajouter une tâche"
-                >
-                  <Plus className="size-3" />
-                </button>
-              </div>
-              <ul className="flex flex-col gap-0.5">
-                {items.slice(0, view === "week" ? 8 : 3).map((t) => {
-                  const proj = projectsById.get(t.project_id ?? "");
-                  const color =
-                    (proj?.color as string | null) ?? statusColor(t.status as TaskStatus);
-                  return (
-                    <li key={t.id}>
-                      <Link
-                        href={proj ? `/app/projects/${proj.id}` : "#"}
-                        className="flex items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] hover:bg-muted"
-                      >
-                        <span
-                          aria-hidden
-                          className="size-1.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="truncate">{t.title}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-              {/* Événements Google Agenda (disponibilités) */}
-              {gEvents.length > 0 && (
-                <ul className="mt-0.5 flex flex-col gap-0.5">
-                  {gEvents.slice(0, view === "week" ? 6 : 2).map((ev) => (
-                    <li key={ev.calendarId + ev.id}>
-                      <a
-                        href={ev.htmlLink ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 truncate rounded border-l-2 bg-muted/40 px-1 py-0.5 text-[11px] italic hover:bg-muted"
-                        style={{ borderColor: ev.color ?? "#9ca3af" }}
-                        title={ev.title}
-                      >
-                        <span className="truncate text-muted-foreground">{ev.title}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {tEvents.length > 0 && (
-                <ul className="mt-0.5 flex flex-col gap-0.5">
-                  {tEvents.slice(0, view === "week" ? 5 : 2).map((ev) => (
-                    <li
-                      key={ev.id}
-                      className="flex items-center gap-1 truncate rounded border-l-2 px-1 py-0.5 text-[11px]"
-                      style={{
-                        borderColor: ev.personColor,
-                        backgroundColor: `${ev.personColor}14`,
-                      }}
-                      title={`${ev.personName} — ${ev.title}`}
-                    >
-                      <span
-                        aria-hidden
-                        className="size-1.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: ev.personColor }}
-                      />
-                      <span className="truncate text-muted-foreground">
-                        {ev.personName}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {items.length > (view === "week" ? 8 : 3) && (
-                <span className="absolute bottom-1 right-2 text-[10px] text-muted-foreground">
-                  +{items.length - (view === "week" ? 8 : 3)}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

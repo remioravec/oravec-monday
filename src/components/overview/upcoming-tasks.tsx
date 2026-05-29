@@ -29,16 +29,30 @@ export function UpcomingTasks({
   const isDone = (t: Task) => (t.status as TaskStatus) === "fait";
   const withDate = tasks.filter((t) => t.due_date && !isDone(t));
 
-  const today = withDate.filter((t) => {
-    const d = parseISO(t.due_date!);
-    return isToday(d);
-  });
-  const week = withDate.filter((t) => {
-    const d = parseISO(t.due_date!);
-    return (
-      isWithinInterval(d, { start: todayStart, end: weekEnd }) && !isToday(d)
-    );
-  });
+  // Ordre de production : par échéance croissante, puis par heure dans la journée.
+  const byDeadline = (a: Task, b: Task) => {
+    const da = a.due_date ?? "";
+    const db = b.due_date ?? "";
+    if (da !== db) return da < db ? -1 : 1;
+    const ta = a.time_of_day ?? "99:99";
+    const tb = b.time_of_day ?? "99:99";
+    return ta < tb ? -1 : ta > tb ? 1 : 0;
+  };
+
+  const today = withDate
+    .filter((t) => {
+      const d = parseISO(t.due_date!);
+      return isToday(d);
+    })
+    .sort(byDeadline);
+  const week = withDate
+    .filter((t) => {
+      const d = parseISO(t.due_date!);
+      return (
+        isWithinInterval(d, { start: todayStart, end: weekEnd }) && !isToday(d)
+      );
+    })
+    .sort(byDeadline);
 
   const projectsById = new Map(projects.map((p) => [p.id, p]));
   const profileById = new Map(profiles.map((p) => [p.id, p]));
