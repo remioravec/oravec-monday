@@ -948,7 +948,76 @@ export function useAllTasks() {
   });
 }
 
-// =================== WORKLOAD ===================
+/**
+ * Met à jour une tâche depuis la vue d'ensemble (qui lit `["all-tasks", ws]`).
+ * Optimiste sur ce cache ; invalide aussi les listes par projet et la charge.
+ */
+export function useUpdateAllTask() {
+  const qc = useQueryClient();
+  const ws = useWorkspaceStore((s) => s.currentId);
+  return useMutation({
+    mutationFn: async ({ id, ...patch }: { id: string } & Partial<Task>) => {
+      const { error } = await sb().from("tasks").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, ...patch }) => {
+      const key = ["all-tasks", ws] as const;
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Task[]>(key);
+      qc.setQueryData<Task[]>(key, (old) =>
+        old?.map((t) => (t.id === id ? ({ ...t, ...patch } as Task) : t)),
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["all-tasks", ws], ctx.prev);
+    },
+    onSettled: (_d, _e, vars) => {
+      qc.invalidateQueries({ queryKey: ["all-tasks", ws] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: qk.workload });
+      if ("due_date" in vars || "time_of_day" in vars || "title" in vars) {
+        void syncTaskToGoogle(vars.id, "push");
+      }
+    },
+  });
+}
+
+/**
+ * Sync Realtime de la vue d'ensemble : toute modification de tâche (ou
+ * d'assignation) rafraîchit la liste globale et la charge par personne. Permet
+ * qu'une tâche passée « Fait » disparaisse aussitôt des listes « à faire ».
+ */
+export function useRealtimeAllTasks() {
+  const qc = useQueryClient();
+  const ws = useWorkspaceStore((s) => s.currentId);
+  useEffect(() => {
+    if (!ws) return;
+    const client = sb();
+    const channel = client
+      .channel(`all-tasks-${ws}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["all-tasks", ws] });
+          qc.invalidateQueries({ queryKey: qk.workload });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "task_assignees" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["tasks-assignees-map"] });
+          qc.invalidateQueries({ queryKey: qk.workload });
+        },
+      )
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [ws, qc]);
+}
 export function useWorkload() {
   return useQuery({
     queryKey: qk.workload,
