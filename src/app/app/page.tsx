@@ -15,12 +15,17 @@ import {
   useProfiles,
   useProjects,
   useResponsibilities,
+  useRealtimeAllTasks,
   useTasksAssigneesMap,
+  useUpdateAllTask,
   useWorkload,
 } from "@/lib/queries";
 import type { UserRole } from "@/lib/supabase/database.types";
 
 export default function OverviewPage() {
+  // Sync temps réel : statut/heure modifiés ailleurs (ou ici) se reflètent vite.
+  useRealtimeAllTasks();
+  const updateTask = useUpdateAllTask();
   const { data: workload = [], isLoading: loadingWl } = useWorkload();
   const { data: tasks = [], isLoading: loadingTasks } = useAllTasks();
   const { data: projects = [] } = useProjects();
@@ -133,6 +138,7 @@ export default function OverviewPage() {
         }))}
         profiles={profiles}
         assigneesMap={assigneesMap}
+        onUpdate={(id, patch) => updateTask.mutate({ id, ...patch })}
       />
 
       <RoutinesTracker
