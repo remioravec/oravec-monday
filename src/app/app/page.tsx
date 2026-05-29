@@ -70,14 +70,14 @@ export default function OverviewPage() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-accent text-accent-foreground">
             <LayoutGrid className="size-5" />
           </span>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight">
               Vue d&apos;ensemble
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -144,8 +144,8 @@ export default function OverviewPage() {
         }))}
       />
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">
+      <section className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold tracking-tight">
           Charge par personne
         </h2>
         {loadingWl || loadingTasks ? (

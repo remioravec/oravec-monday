@@ -163,10 +163,10 @@ export default function ProjectPage({
           <div className="flex min-w-0 items-center gap-2">
             <span
               aria-hidden
-              className="size-2.5 shrink-0 rounded-full"
+              className="size-3 shrink-0 rounded-full"
               style={{ backgroundColor: project.color ?? "#2563eb" }}
             />
-            <h1 className="truncate text-xl font-semibold tracking-tight">
+            <h1 className="truncate text-2xl font-semibold tracking-tight">
               {project.name}
             </h1>
             <button
