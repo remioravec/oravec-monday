@@ -17,7 +17,6 @@ export function NotificationsPanel() {
 
 function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
   const update = useUpdateNotifPrefs();
-  const supabase = createClient();
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default",
   );
@@ -30,6 +29,7 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
     }
     setRegistering(true);
     try {
+      const supabase = createClient();
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== "granted") {
@@ -77,6 +77,7 @@ function NotifBody({ prefs }: { prefs: NotifPrefs | null | undefined }) {
 
   async function handleDisable() {
     try {
+      const supabase = createClient();
       await update.mutateAsync({ push_enabled: false });
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();

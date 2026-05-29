@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import {
+  CalendarDays,
+  Clock,
   Download,
   FileText,
   Loader2,
@@ -122,8 +124,8 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
           status={task.status as TaskStatus}
           onChange={(s) => update.mutate({ id: task.id, status: s })}
         />
-        <div className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1">
-          <span className="text-xs text-muted-foreground">Date</span>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted/40 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+          <CalendarDays className="size-4 text-muted-foreground" />
           <input
             type="date"
             value={task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : ""}
@@ -135,11 +137,11 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
                   : null,
               })
             }
-            className="h-6 bg-transparent text-xs outline-none"
+            className="bg-transparent text-sm outline-none [color-scheme:light]"
           />
-        </div>
-        <div className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1">
-          <span className="text-xs text-muted-foreground">Heure</span>
+        </label>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted/40 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+          <Clock className="size-4 text-muted-foreground" />
           <input
             type="time"
             value={task.time_of_day ? task.time_of_day.slice(0, 5) : ""}
@@ -149,9 +151,9 @@ function DrawerBody({ task, projectId }: { task: Task; projectId: string }) {
                 time_of_day: e.target.value ? e.target.value + ":00" : null,
               })
             }
-            className="h-6 w-20 bg-transparent text-xs outline-none"
+            className="w-[4.75rem] bg-transparent text-sm outline-none [color-scheme:light]"
           />
-        </div>
+        </label>
       </div>
 
       {/* Description */}
