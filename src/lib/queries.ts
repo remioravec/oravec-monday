@@ -1035,3 +1035,31 @@ export function useSignOut() {
     },
   } as UseMutationOptions<void, Error, void>);
 }
+
+// =================== REALTIME : PROFILS (photo / nom / couleur live) ===================
+/**
+ * Abonne le client aux changements de `profiles` : dès qu'un utilisateur change
+ * sa photo / son nom / sa couleur, on invalide les caches concernés pour que la
+ * mise à jour apparaisse en direct partout (sidebar, vue d'ensemble, assignés).
+ */
+export function useRealtimeProfiles() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const client = sb();
+    const channel = client
+      .channel("profiles-all")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          qc.invalidateQueries({ queryKey: qk.profiles });
+          qc.invalidateQueries({ queryKey: ["my-profile"] });
+          qc.invalidateQueries({ queryKey: qk.workload });
+        },
+      )
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [qc]);
+}
