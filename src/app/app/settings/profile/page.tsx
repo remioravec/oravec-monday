@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,8 +14,24 @@ import {
   useUpdateMyProfile,
   type Profile,
 } from "@/lib/queries";
-import { NotificationsPanel } from "@/components/settings/notifications-panel";
-import { GoogleCalendarsPanel } from "@/components/settings/google-calendars-panel";
+
+// Panneaux chargés côté client uniquement : ils utilisent des API navigateur
+// (Notification, service worker) → un rendu serveur provoquait un plantage
+// d'hydratation sur la page Profil.
+const NotificationsPanel = dynamic(
+  () =>
+    import("@/components/settings/notifications-panel").then(
+      (m) => m.NotificationsPanel,
+    ),
+  { ssr: false },
+);
+const GoogleCalendarsPanel = dynamic(
+  () =>
+    import("@/components/settings/google-calendars-panel").then(
+      (m) => m.GoogleCalendarsPanel,
+    ),
+  { ssr: false },
+);
 
 const COLORS = [
   "#2563eb",
