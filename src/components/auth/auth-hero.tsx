@@ -21,7 +21,14 @@ const FEATURES = [
 
 export function AuthHero() {
   return (
-    <aside className="relative hidden h-full flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary to-brand-dark p-10 text-white lg:flex">
+    <aside className="relative hidden h-full flex-col overflow-hidden bg-white lg:flex">
+      {/* Logo sur fond blanc */}
+      <div className="px-8 py-6">
+        <Logo />
+      </div>
+
+      {/* Panneau dégradé : démarre par un arrondi juste sous le logo */}
+      <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-t-[2rem] bg-gradient-to-br from-primary via-primary to-brand-dark p-10 text-white">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-30"
@@ -30,10 +37,6 @@ export function AuthHero() {
             "radial-gradient(circle at 20% 0%, rgba(255,255,255,0.25), transparent 45%), radial-gradient(circle at 80% 100%, rgba(13,29,72,0.6), transparent 50%)",
         }}
       />
-
-      <div className="relative">
-        <Logo variant="light" />
-      </div>
 
       <div className="relative flex flex-col gap-10">
         <div className="space-y-2">
@@ -66,6 +69,7 @@ export function AuthHero() {
       <p className="relative text-xs text-white/60">
         © {new Date().getFullYear()} Oravec. Tous droits réservés.
       </p>
+      </div>
     </aside>
   );
 }
