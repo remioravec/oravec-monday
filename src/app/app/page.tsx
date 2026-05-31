@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter, LayoutGrid } from "lucide-react";
+import { Filter, LayoutGrid, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeamBattery } from "@/components/overview/team-battery";
+import { AddTaskDialog } from "@/components/overview/add-task-dialog";
 import { UpcomingTasks } from "@/components/overview/upcoming-tasks";
 import { RoutinesTracker } from "@/components/overview/routines-tracker";
 import { ChildrenOverview } from "@/components/overview/children-overview";
@@ -46,6 +47,7 @@ export default function OverviewPage() {
 
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   const profilesById = useMemo(
     () => new Map(profiles.map((p) => [p.id, p])),
@@ -122,6 +124,14 @@ export default function OverviewPage() {
               {profilesById.get(assigneeFilter)?.full_name ?? "?"} ×
             </Button>
           )}
+          <Button
+            size="sm"
+            onClick={() => setAddOpen(true)}
+            className="h-9 bg-primary text-white hover:bg-primary/90"
+          >
+            <Plus className="size-3.5" />
+            Ajouter une tâche
+          </Button>
         </div>
       </header>
 
@@ -187,6 +197,18 @@ export default function OverviewPage() {
           color: p.color ?? "#94a3b8",
         }))}
       />
+
+      {addOpen && (
+        <AddTaskDialog
+          projects={projects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color ?? "#94a3b8",
+          }))}
+          profiles={profiles}
+          onClose={() => setAddOpen(false)}
+        />
+      )}
     </div>
   );
 }

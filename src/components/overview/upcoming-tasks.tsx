@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
-import { fr } from "date-fns/locale";
 import { CalendarClock, Clock, ListChecks } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/tasks/status-pill";
@@ -218,7 +217,23 @@ function TaskItem({
             </Link>
           )}
           {proj && <span className="text-muted-foreground/60">·</span>}
-          {format(parseISO(t.due_date!), "EEE d MMM", { locale: fr })}
+          {/* Édition directe de la date (native, tactile) */}
+          <label className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 font-medium text-foreground/80 transition-colors hover:bg-muted/70">
+            <CalendarClock className="size-3" />
+            <input
+              type="date"
+              value={format(parseISO(t.due_date!), "yyyy-MM-dd")}
+              onChange={(e) =>
+                onUpdate(t.id, {
+                  due_date: e.target.value
+                    ? new Date(`${e.target.value}T12:00:00`).toISOString()
+                    : null,
+                })
+              }
+              className="bg-transparent text-[11px] outline-none [&::-webkit-calendar-picker-indicator]:opacity-50"
+              aria-label="Date d'échéance"
+            />
+          </label>
           {/* Édition directe de l'heure (native, tactile) */}
           <label className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground/80 transition-colors hover:bg-muted/70">
             <Clock className="size-3" />
