@@ -16,7 +16,6 @@ import {
   useProfiles,
   useProjects,
   useResponsibilities,
-  useRealtimeAllTasks,
   useTasksAssigneesMap,
   useUpdateAllTask,
   useWorkload,
@@ -24,8 +23,7 @@ import {
 import type { UserRole } from "@/lib/supabase/database.types";
 
 export default function OverviewPage() {
-  // Sync temps réel : statut/heure modifiés ailleurs (ou ici) se reflètent vite.
-  useRealtimeAllTasks();
+  // Sync temps réel global monté dans l'AppShell (useRealtimeAllTasks).
   const updateTask = useUpdateAllTask();
   const { data: workload = [], isLoading: loadingWl } = useWorkload();
   const { data: tasks = [], isLoading: loadingTasks } = useAllTasks();

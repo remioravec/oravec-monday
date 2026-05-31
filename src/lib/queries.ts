@@ -1185,6 +1185,47 @@ export function useSignOut() {
  * sa photo / son nom / sa couleur, on invalide les caches concernés pour que la
  * mise à jour apparaisse en direct partout (sidebar, vue d'ensemble, assignés).
  */
+/**
+ * Realtime app-wide : dossiers, projets et routines à jour en direct (sidebar,
+ * panneaux routines) entre utilisateurs. Complète useRealtimeProfiles (profils)
+ * et useRealtimeAllTasks / useRealtimeTasks (tâches). Monté dans l'AppShell.
+ */
+export function useRealtimeApp() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const client = sb();
+    const channel = client
+      .channel("app-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "folders" },
+        () => qc.invalidateQueries({ queryKey: qk.folders }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects" },
+        () => {
+          qc.invalidateQueries({ queryKey: qk.projects });
+          qc.invalidateQueries({ queryKey: qk.folders });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "routines" },
+        () => qc.invalidateQueries({ queryKey: ["all-routines"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "routine_assignees" },
+        () => qc.invalidateQueries({ queryKey: ["all-routines"] }),
+      )
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [qc]);
+}
+
 export function useRealtimeProfiles() {
   const qc = useQueryClient();
   useEffect(() => {
