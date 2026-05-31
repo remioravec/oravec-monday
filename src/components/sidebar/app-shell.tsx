@@ -6,6 +6,7 @@ import { AppSidebar } from "./app-sidebar";
 import { MobileNav } from "./mobile-nav";
 import { Logo } from "@/components/brand/logo";
 import { NotificationPrompt } from "@/components/notifications/notification-prompt";
+import { AddTaskFab } from "@/components/tasks/add-task-fab";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { useRealtimeProfiles } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Barre de navigation basse (mobile) */}
       <MobileNav onOpenMenu={() => setMobileOpen(true)} />
+
+      {/* Bouton flottant « + » pour créer une tâche (toutes pages) */}
+      <AddTaskFab />
 
       <OnboardingHost />
     </div>
