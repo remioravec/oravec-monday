@@ -432,6 +432,7 @@ export function useCreateTask() {
       status?: TaskStatus;
       position?: number;
       due_date?: string | null;
+      time_of_day?: string | null;
     }) => {
       const { data: u } = await sb().auth.getUser();
       const { data, error } = await sb()
@@ -443,6 +444,7 @@ export function useCreateTask() {
           status: input.status ?? "a_faire",
           position: input.position ?? 0,
           due_date: input.due_date ?? null,
+          time_of_day: input.time_of_day ?? null,
           created_by: u.user?.id ?? null,
         })
         .select()
@@ -452,6 +454,7 @@ export function useCreateTask() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: qk.tasks(vars.project_id) });
+      qc.invalidateQueries({ queryKey: ["all-tasks"] });
       if (vars.parent_task_id) {
         qc.invalidateQueries({ queryKey: qk.subtasks(vars.parent_task_id) });
       }
@@ -734,6 +737,7 @@ export function useToggleAssignee() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: qk.taskAssignees(vars.taskId) });
+      qc.invalidateQueries({ queryKey: ["tasks-assignees-map"] });
       qc.invalidateQueries({ queryKey: qk.workload });
       // Notification push à la personne assignée (best-effort, ignore si la
       // fonction/les clés VAPID ne sont pas configurées).
