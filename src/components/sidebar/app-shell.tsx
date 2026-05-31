@@ -8,7 +8,7 @@ import { Logo } from "@/components/brand/logo";
 import { NotificationPrompt } from "@/components/notifications/notification-prompt";
 import { AddTaskFab } from "@/components/tasks/add-task-fab";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
-import { useRealtimeProfiles } from "@/lib/queries";
+import { useRealtimeProfiles, useRealtimeApp, useRealtimeAllTasks } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -20,8 +20,11 @@ import {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  // Avatars/noms à jour en direct entre utilisateurs.
+  // Sync Realtime app-wide : profils + dossiers/projets/routines à jour en
+  // direct entre utilisateurs sur toute l'application.
   useRealtimeProfiles();
+  useRealtimeApp();
+  useRealtimeAllTasks();
 
   return (
     <div className="flex min-h-svh">
