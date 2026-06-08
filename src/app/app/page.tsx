@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { TeamBattery } from "@/components/overview/team-battery";
 import { AddTaskDialog } from "@/components/overview/add-task-dialog";
 import { UpcomingTasks } from "@/components/overview/upcoming-tasks";
-import { RoutinesTracker } from "@/components/overview/routines-tracker";
 import { ChildrenOverview } from "@/components/overview/children-overview";
 import { WorkloadCard } from "@/components/overview/workload-card";
 import {
@@ -16,11 +15,26 @@ import {
   useProfiles,
   useProjects,
   useResponsibilities,
+  useRoutineCompletions,
   useTasksAssigneesMap,
+  useToggleRoutineCompletion,
   useUpdateAllTask,
   useWorkload,
+  type Routine,
 } from "@/lib/queries";
 import type { UserRole } from "@/lib/supabase/database.types";
+
+// Référence stable pour le défaut de useRoutineCompletions (évite un nouveau
+// Set à chaque render).
+const EMPTY_SET: Set<string> = new Set();
+
+/** Une routine est-elle prévue aujourd'hui selon sa récurrence ? */
+function isRoutineDueToday(r: Routine, now: Date) {
+  if (r.frequency === "daily") return true;
+  if (r.frequency === "weekly") return (r.days_of_week ?? []).includes(now.getDay());
+  if (r.frequency === "monthly") return now.getDate() === r.day_of_month;
+  return false;
+}
 
 export default function OverviewPage() {
   // Sync temps réel global monté dans l'AppShell (useRealtimeAllTasks).
@@ -53,6 +67,18 @@ export default function OverviewPage() {
   );
 
   const assigneesMap = useTasksAssigneesMap(tasks.map((t) => t.id));
+
+  // Routines du jour (objectifs cochables, hors batterie).
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const { data: completedRoutineIds = EMPTY_SET } = useRoutineCompletions(todayStr);
+  const toggleRoutine = useToggleRoutineCompletion();
+  const routinesToday = useMemo(
+    () => routines.filter((r) => r.active && isRoutineDueToday(r, now)),
+    // now est recalculé à chaque render mais seul le jour compte ; routines pilote.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [routines],
+  );
 
   // Filtre les profils par rôle (sélecteur)
   const visibleProfiles = useMemo(() => {
@@ -185,15 +211,11 @@ export default function OverviewPage() {
         profiles={profiles}
         assigneesMap={assigneesMap}
         onUpdate={(id, patch) => updateTask.mutate({ id, ...patch })}
-      />
-
-      <RoutinesTracker
-        routines={routines}
-        projects={projects.map((p) => ({
-          id: p.id,
-          name: p.name,
-          color: p.color ?? "#94a3b8",
-        }))}
+        routines={routinesToday}
+        completedRoutineIds={completedRoutineIds}
+        onToggleRoutine={(routineId, done) =>
+          toggleRoutine.mutate({ routineId, day: todayStr, done })
+        }
       />
 
       {addOpen && (
