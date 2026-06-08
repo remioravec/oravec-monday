@@ -377,6 +377,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      routine_completions: {
+        Row: {
+          routine_id: string;
+          completed_on: string;
+          completed_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          routine_id: string;
+          completed_on: string;
+          completed_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          routine_id?: string;
+          completed_on?: string;
+          completed_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       workspaces: {
         Row: {
           id: string;

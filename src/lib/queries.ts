@@ -1070,6 +1070,79 @@ export function useRoutines(projectId: string | undefined) {
   });
 }
 
+// =================== ROUTINE COMPLETIONS (objectifs cochables) ===================
+export type RoutineCompletion =
+  Database["public"]["Tables"]["routine_completions"]["Row"];
+
+/** Routines cochées pour une date donnée (par défaut aujourd'hui). */
+export function useRoutineCompletions(day: string) {
+  return useQuery({
+    queryKey: ["routine-completions", day],
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await sb()
+        .from("routine_completions")
+        .select("routine_id")
+        .eq("completed_on", day);
+      if (error) throw error;
+      return new Set((data ?? []).map((r) => r.routine_id));
+    },
+  });
+}
+
+/** Coche / décoche une routine pour un jour (objectif récurrent). */
+export function useToggleRoutineCompletion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      routineId,
+      day,
+      done,
+    }: {
+      routineId: string;
+      day: string;
+      done: boolean;
+    }) => {
+      if (done) {
+        const { data: u } = await sb().auth.getUser();
+        const { error } = await sb()
+          .from("routine_completions")
+          .upsert(
+            {
+              routine_id: routineId,
+              completed_on: day,
+              completed_by: u.user?.id ?? null,
+            },
+            { onConflict: "routine_id,completed_on" },
+          );
+        if (error) throw error;
+      } else {
+        const { error } = await sb()
+          .from("routine_completions")
+          .delete()
+          .eq("routine_id", routineId)
+          .eq("completed_on", day);
+        if (error) throw error;
+      }
+    },
+    onMutate: async ({ routineId, day, done }) => {
+      const key = ["routine-completions", day];
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Set<string>>(key);
+      const next = new Set(prev ?? []);
+      if (done) next.add(routineId);
+      else next.delete(routineId);
+      qc.setQueryData(key, next);
+      return { prev, key };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(ctx.key, ctx.prev);
+    },
+    onSettled: (_d, _e, vars) => {
+      qc.invalidateQueries({ queryKey: ["routine-completions", vars.day] });
+    },
+  });
+}
+
 export function useRoutineAssignees(routineId: string | undefined) {
   return useQuery({
     queryKey: routineId
@@ -1218,6 +1291,11 @@ export function useRealtimeApp() {
         "postgres_changes",
         { event: "*", schema: "public", table: "routine_assignees" },
         () => qc.invalidateQueries({ queryKey: ["all-routines"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "routine_completions" },
+        () => qc.invalidateQueries({ queryKey: ["routine-completions"] }),
       )
       .subscribe();
     return () => {

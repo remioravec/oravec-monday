@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
-import { CalendarClock, Clock, ListChecks } from "lucide-react";
+import { CalendarClock, CheckCircle2, Circle, Clock, ListChecks, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/tasks/status-pill";
-import type { Profile, Task } from "@/lib/queries";
+import type { Profile, Routine, Task } from "@/lib/queries";
 import type { TaskStatus } from "@/lib/supabase/database.types";
 
 type Project = { id: string; name: string; color: string };
+
+const FREQ_LABEL = { daily: "Quotidien", weekly: "Hebdo", monthly: "Mensuel" } as const;
 
 export function UpcomingTasks({
   tasks,
@@ -17,12 +19,18 @@ export function UpcomingTasks({
   profiles,
   assigneesMap,
   onUpdate,
+  routines,
+  completedRoutineIds,
+  onToggleRoutine,
 }: {
   tasks: Task[];
   projects: Project[];
   profiles: Profile[];
   assigneesMap: Map<string, string[]>;
   onUpdate: (id: string, patch: Partial<Task>) => void;
+  routines: Routine[];
+  completedRoutineIds: Set<string>;
+  onToggleRoutine: (routineId: string, done: boolean) => void;
 }) {
   const now = new Date();
   const todayStart = startOfDay(now);
@@ -60,7 +68,7 @@ export function UpcomingTasks({
   const profileById = new Map(profiles.map((p) => [p.id, p]));
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <TasksColumn
         title="À faire aujourd'hui"
         icon={<CalendarClock className="size-4" />}
@@ -71,6 +79,12 @@ export function UpcomingTasks({
         assigneesMap={assigneesMap}
         onUpdate={onUpdate}
         emptyLabel="Rien de prévu aujourd'hui. Profite ☀️"
+      />
+      <RoutinesColumn
+        routines={routines}
+        projectsById={projectsById}
+        completedRoutineIds={completedRoutineIds}
+        onToggle={onToggleRoutine}
       />
       <TasksColumn
         title="Cette semaine"
@@ -84,6 +98,100 @@ export function UpcomingTasks({
         emptyLabel="Rien dans les 7 prochains jours."
       />
     </div>
+  );
+}
+
+function RoutinesColumn({
+  routines,
+  projectsById,
+  completedRoutineIds,
+  onToggle,
+}: {
+  routines: Routine[];
+  projectsById: Map<string, Project>;
+  completedRoutineIds: Set<string>;
+  onToggle: (routineId: string, done: boolean) => void;
+}) {
+  const doneCount = routines.filter((r) => completedRoutineIds.has(r.id)).length;
+  return (
+    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <header className="flex items-center justify-between gap-2 border-b px-5 py-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
+            <Repeat className="size-4" />
+          </span>
+          Routines du jour
+        </div>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
+          {doneCount}/{routines.length}
+        </span>
+      </header>
+      {routines.length === 0 ? (
+        <div className="p-6 text-center text-sm italic text-muted-foreground">
+          Aucune routine prévue aujourd&apos;hui.
+        </div>
+      ) : (
+        <ul className="divide-y">
+          {routines.map((r) => {
+            const proj = r.project_id ? projectsById.get(r.project_id) : undefined;
+            const done = completedRoutineIds.has(r.id);
+            return (
+              <li
+                key={r.id}
+                className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30"
+              >
+                <button
+                  type="button"
+                  onClick={() => onToggle(r.id, !done)}
+                  aria-label={done ? "Décocher" : "Cocher comme fait"}
+                  className={
+                    done
+                      ? "inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors"
+                      : "inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-emerald-50 hover:text-emerald-600"
+                  }
+                >
+                  {done ? (
+                    <CheckCircle2 className="size-4" />
+                  ) : (
+                    <Circle className="size-4" />
+                  )}
+                </button>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span
+                    className={
+                      "truncate text-sm font-medium " +
+                      (done ? "text-muted-foreground line-through" : "")
+                    }
+                  >
+                    {r.title}
+                  </span>
+                  {proj && (
+                    <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <span
+                        aria-hidden
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: proj.color ?? "#94a3b8" }}
+                      />
+                      {proj.name}
+                    </span>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
+                    {FREQ_LABEL[r.frequency]}
+                  </span>
+                  {r.time_of_day && (
+                    <span className="rounded-md border bg-background px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                      {r.time_of_day.slice(0, 5)}
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
