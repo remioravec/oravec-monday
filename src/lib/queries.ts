@@ -1089,6 +1089,30 @@ export function useRoutineCompletions(day: string) {
   });
 }
 
+/**
+ * Complétions des routines depuis `sinceDay` (inclus), regroupées par routine :
+ * Map<routine_id, Set<date>>. Sert à calculer les séries (« jours d'affilée »).
+ */
+export function useRoutineCompletionsSince(sinceDay: string) {
+  return useQuery({
+    queryKey: ["routine-completions", "range", sinceDay],
+    queryFn: async (): Promise<Map<string, Set<string>>> => {
+      const { data, error } = await sb()
+        .from("routine_completions")
+        .select("routine_id, completed_on")
+        .gte("completed_on", sinceDay);
+      if (error) throw error;
+      const map = new Map<string, Set<string>>();
+      for (const r of data ?? []) {
+        const set = map.get(r.routine_id) ?? new Set<string>();
+        set.add(r.completed_on);
+        map.set(r.routine_id, set);
+      }
+      return map;
+    },
+  });
+}
+
 /** Coche / décoche une routine pour un jour (objectif récurrent). */
 export function useToggleRoutineCompletion() {
   const qc = useQueryClient();
@@ -1137,8 +1161,9 @@ export function useToggleRoutineCompletion() {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(ctx.key, ctx.prev);
     },
-    onSettled: (_d, _e, vars) => {
-      qc.invalidateQueries({ queryKey: ["routine-completions", vars.day] });
+    onSettled: () => {
+      // Préfixe : rafraîchit la complétion du jour ET la plage (séries).
+      qc.invalidateQueries({ queryKey: ["routine-completions"] });
     },
   });
 }
