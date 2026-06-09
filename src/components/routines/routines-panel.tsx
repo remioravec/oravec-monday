@@ -91,7 +91,8 @@ export function RoutinesPanel({
           <SheetHeader>
             <SheetTitle>Routines récurrentes</SheetTitle>
             <SheetDescription>
-              Templates générés automatiquement chaque jour à 00:00.
+              Objectifs récurrents cochables, affichés dans « Routines du jour »
+              selon leur fréquence.
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
