@@ -32,9 +32,9 @@ const STEPS: Step[] = [
   },
   {
     emoji: "🔁",
-    title: "Routines & vues",
-    body: "Crée des routines récurrentes (icône violette). Bascule entre Tableau, Gantt, Calendrier pour voir tes données autrement.",
-    hint: "La vue d'ensemble montre la charge équipe et les routines validées.",
+    title: "Routines & habitudes",
+    body: "Dans l'onglet « Routines », crée tes habitudes (tous les jours ou certains jours), coche-les chaque jour et suis ta régularité (série + 7 derniers jours).",
+    hint: "La vue d'ensemble montre la charge équipe et les routines du jour.",
   },
 ];
 
