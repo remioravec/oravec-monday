@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useMemo, useState } from "react";
-import { BarChart3, CalendarDays, ChevronDown, ChevronRight, LayoutGrid, Plus, Star } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronRight, LayoutGrid, Plus, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TaskRow } from "@/components/tasks/task-row";
 import { PasteTasksDialog } from "@/components/tasks/paste-tasks-dialog";
@@ -211,10 +211,6 @@ export default function ProjectPage({
           <TabButton active={view === "gantt"} onClick={() => setView("gantt")}>
             <BarChart3 className="size-3.5" />
             Gantt
-          </TabButton>
-          <TabButton disabled>
-            <CalendarDays className="size-3.5" />
-            Calendrier (bientôt)
           </TabButton>
         </nav>
       </header>

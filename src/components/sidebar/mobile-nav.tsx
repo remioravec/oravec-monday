@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Calendar, FolderTree, User } from "lucide-react";
+import { LayoutGrid, Repeat, FolderTree, User } from "lucide-react";
 
 /**
  * Barre de navigation basse (mobile uniquement). Pensée pour le pouce :
@@ -25,10 +25,10 @@ export function MobileNav({ onOpenMenu }: { onOpenMenu: () => void }) {
         label="Accueil"
       />
       <Tab
-        href="/app/calendar"
-        active={pathname === "/app/calendar"}
-        icon={<Calendar className="size-5" />}
-        label="Calendrier"
+        href="/app/routines"
+        active={pathname.startsWith("/app/routines")}
+        icon={<Repeat className="size-5" />}
+        label="Routines"
       />
       <button
         type="button"

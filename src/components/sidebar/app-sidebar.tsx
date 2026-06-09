@@ -34,7 +34,6 @@ import {
   Eye,
   EyeOff,
   Repeat,
-  Calendar,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { UserMenu } from "@/components/sidebar/user-menu";
@@ -241,12 +240,12 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           Vue d&apos;ensemble
         </Link>
         <Link
-          href="/app/calendar"
+          href="/app/routines"
           onClick={onNavigate}
-          className={navLinkClass(pathname === "/app/calendar")}
+          className={navLinkClass(pathname.startsWith("/app/routines"))}
         >
-          <Calendar className="size-4" />
-          Calendrier
+          <Repeat className="size-4" />
+          Routines
         </Link>
       </nav>
 

@@ -1187,7 +1187,7 @@ export function useRoutineAssignees(routineId: string | undefined) {
 }
 
 export interface RoutineFormInput {
-  project_id: string;
+  project_id: string | null;
   title: string;
   description: string | null;
   frequency: RoutineFrequency;
@@ -1240,30 +1240,39 @@ export function useUpsertRoutine() {
       return routineId;
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: qk.routines(vars.project_id) });
+      qc.invalidateQueries({ queryKey: ["all-routines"] });
+      if (vars.project_id) {
+        qc.invalidateQueries({ queryKey: qk.routines(vars.project_id) });
+      }
     },
   });
 }
 
-export function useToggleRoutineActive(projectId: string) {
+export function useToggleRoutineActive(projectId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
       const { error } = await sb().from("routines").update({ active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.routines(projectId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-routines"] });
+      if (projectId) qc.invalidateQueries({ queryKey: qk.routines(projectId) });
+    },
   });
 }
 
-export function useDeleteRoutine(projectId: string) {
+export function useDeleteRoutine(projectId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await sb().from("routines").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.routines(projectId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-routines"] });
+      if (projectId) qc.invalidateQueries({ queryKey: qk.routines(projectId) });
+    },
   });
 }
 
