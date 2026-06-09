@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays, differenceInCalendarDays } from "date-fns";
-import { CalendarClock, CheckCircle2, Circle, Clock, ListChecks, Repeat } from "lucide-react";
+import { CalendarClock, CheckCircle2, Circle, Clock, Flame, ListChecks, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/tasks/status-pill";
 import type { Profile, Routine, Task } from "@/lib/queries";
@@ -11,7 +11,8 @@ import type { TaskStatus } from "@/lib/supabase/database.types";
 
 type Project = { id: string; name: string; color: string };
 
-const FREQ_LABEL = { daily: "Quotidien", weekly: "Hebdo", monthly: "Mensuel" } as const;
+// Objectif : tenir chaque routine au moins 30 jours d'affilée.
+const STREAK_GOAL = 30;
 
 export function UpcomingTasks({
   tasks,
@@ -21,6 +22,7 @@ export function UpcomingTasks({
   onUpdate,
   routines,
   completedRoutineIds,
+  routineStreaks,
   onToggleRoutine,
 }: {
   tasks: Task[];
@@ -30,6 +32,7 @@ export function UpcomingTasks({
   onUpdate: (id: string, patch: Partial<Task>) => void;
   routines: Routine[];
   completedRoutineIds: Set<string>;
+  routineStreaks: Map<string, number>;
   onToggleRoutine: (routineId: string, done: boolean) => void;
 }) {
   const now = new Date();
@@ -87,6 +90,7 @@ export function UpcomingTasks({
         routines={routines}
         projectsById={projectsById}
         completedRoutineIds={completedRoutineIds}
+        streaks={routineStreaks}
         onToggle={onToggleRoutine}
       />
       <TasksColumn
@@ -108,22 +112,30 @@ function RoutinesColumn({
   routines,
   projectsById,
   completedRoutineIds,
+  streaks,
   onToggle,
 }: {
   routines: Routine[];
   projectsById: Map<string, Project>;
   completedRoutineIds: Set<string>;
+  streaks: Map<string, number>;
   onToggle: (routineId: string, done: boolean) => void;
 }) {
   const doneCount = routines.filter((r) => completedRoutineIds.has(r.id)).length;
   return (
     <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <header className="flex items-center justify-between gap-2 border-b px-5 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold">
+      <header className="flex items-start justify-between gap-2 border-b px-5 py-3">
+        <div className="flex items-center gap-2">
           <span className="inline-flex size-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
             <Repeat className="size-4" />
           </span>
-          Routines du jour
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold leading-tight">Routines du jour</span>
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Flame className="size-3 text-orange-500" />
+              Objectif : {STREAK_GOAL} jours d&apos;affilée
+            </span>
+          </div>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
           {doneCount}/{routines.length}
@@ -180,9 +192,7 @@ function RoutinesColumn({
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700 ring-1 ring-purple-200">
-                    {FREQ_LABEL[r.frequency]}
-                  </span>
+                  <StreakBadge streak={streaks.get(r.id) ?? 0} />
                   {r.time_of_day && (
                     <span className="rounded-md border bg-background px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
                       {r.time_of_day.slice(0, 5)}
@@ -195,6 +205,30 @@ function RoutinesColumn({
         </ul>
       )}
     </section>
+  );
+}
+
+/** Badge « série » 🔥 N : gris à 0, orange en cours, vert une fois l'objectif atteint. */
+function StreakBadge({ streak }: { streak: number }) {
+  const reached = streak >= STREAK_GOAL;
+  const cls = reached
+    ? "bg-emerald-100 text-emerald-700 ring-emerald-200"
+    : streak > 0
+      ? "bg-orange-100 text-orange-700 ring-orange-200"
+      : "bg-muted text-muted-foreground ring-transparent";
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1 ${cls}`}
+      title={
+        reached
+          ? `Objectif atteint : ${streak} jours d'affilée 🎉`
+          : `${streak} jour${streak > 1 ? "s" : ""} d'affilée (objectif ${STREAK_GOAL})`
+      }
+    >
+      <Flame className="size-3" />
+      {streak}
+      {!reached && <span className="opacity-60">/{STREAK_GOAL}</span>}
+    </span>
   );
 }
 

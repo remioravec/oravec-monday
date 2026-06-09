@@ -16,6 +16,7 @@ import {
   useProjects,
   useResponsibilities,
   useRoutineCompletions,
+  useRoutineCompletionsSince,
   useTasksAssigneesMap,
   useToggleRoutineCompletion,
   useUpdateAllTask,
@@ -34,6 +35,26 @@ function isRoutineDueToday(r: Routine, now: Date) {
   if (r.frequency === "weekly") return (r.days_of_week ?? []).includes(now.getDay());
   if (r.frequency === "monthly") return now.getDate() === r.day_of_month;
   return false;
+}
+
+const dateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/**
+ * Nombre de jours d'affilée où la routine a été cochée, jusqu'à aujourd'hui.
+ * Tolérance : si aujourd'hui n'est pas encore coché, on part d'hier (la série
+ * n'est rompue qu'au premier jour entier manqué).
+ */
+function computeStreak(dates: Set<string> | undefined, now: Date) {
+  if (!dates || dates.size === 0) return 0;
+  const cur = new Date(now);
+  if (!dates.has(dateStr(cur))) cur.setDate(cur.getDate() - 1);
+  let streak = 0;
+  while (dates.has(dateStr(cur))) {
+    streak++;
+    cur.setDate(cur.getDate() - 1);
+  }
+  return streak;
 }
 
 export default function OverviewPage() {
@@ -79,6 +100,23 @@ export default function OverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [routines],
   );
+
+  // Séries « jours d'affilée » : on regarde ~40 jours de complétions en arrière.
+  const sinceStr = useMemo(() => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 40);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayStr]);
+  const { data: completionsRange } = useRoutineCompletionsSince(sinceStr);
+  const routineStreaks = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of routinesToday) {
+      map.set(r.id, computeStreak(completionsRange?.get(r.id), now));
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routinesToday, completionsRange, todayStr]);
 
   // Filtre les profils par rôle (sélecteur)
   const visibleProfiles = useMemo(() => {
@@ -213,6 +251,7 @@ export default function OverviewPage() {
         onUpdate={(id, patch) => updateTask.mutate({ id, ...patch })}
         routines={routinesToday}
         completedRoutineIds={completedRoutineIds}
+        routineStreaks={routineStreaks}
         onToggleRoutine={(routineId, done) =>
           toggleRoutine.mutate({ routineId, day: todayStr, done })
         }
