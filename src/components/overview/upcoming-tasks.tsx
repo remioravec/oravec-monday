@@ -14,20 +14,35 @@ type Project = { id: string; name: string; color: string };
 // Objectif : tenir chaque routine au moins 30 jours d'affilée.
 const STREAK_GOAL = 30;
 
-/** Regroupe en préservant l'ordre, par projet (null = « sans projet »). */
-function groupByProject<T extends { project_id: string | null }>(items: T[]): T[][] {
-  const order: string[] = [];
+/**
+ * Regroupe par projet, trie chaque groupe par échéance la plus proche, et
+ * ordonne les groupes selon leur prochaine échéance (le projet dont la tâche
+ * la plus proche arrive en premier passe en tête).
+ */
+function groupByProject<T extends { project_id: string | null }>(
+  items: T[],
+  key: (it: T) => string,
+): T[][] {
   const map = new Map<string, T[]>();
   for (const it of items) {
     const k = it.project_id ?? "__none__";
-    if (!map.has(k)) {
-      map.set(k, []);
-      order.push(k);
-    }
-    map.get(k)!.push(it);
+    const arr = map.get(k) ?? [];
+    arr.push(it);
+    map.set(k, arr);
   }
-  return order.map((k) => map.get(k)!);
+  const cmp = (a: T, b: T) => {
+    const ka = key(a);
+    const kb = key(b);
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  };
+  const groups = [...map.values()];
+  for (const g of groups) g.sort(cmp);
+  groups.sort((a, b) => cmp(a[0], b[0]));
+  return groups;
 }
+
+const taskKey = (t: Task) => `${t.due_date ?? "9999"}|${t.time_of_day ?? "99:99"}`;
+const routineKey = (r: Routine) => r.time_of_day ?? "99:99";
 
 export function UpcomingTasks({
   tasks,
@@ -162,7 +177,7 @@ function RoutinesColumn({
         </div>
       ) : (
         <div className="flex flex-col">
-          {groupByProject(routines).map((group, gi) => (
+          {groupByProject(routines, routineKey).map((group, gi) => (
           <ul
             key={group[0].id}
             className={
@@ -298,7 +313,7 @@ function TasksColumn({
         </div>
       ) : (
         <div className="flex flex-col">
-          {groupByProject(tasks).map((group, gi) => (
+          {groupByProject(tasks, taskKey).map((group, gi) => (
             <ul
               key={group[0].id}
               className={
