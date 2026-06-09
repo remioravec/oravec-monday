@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
+import { format, isToday, isWithinInterval, parseISO, startOfDay, endOfDay, addDays, differenceInCalendarDays } from "date-fns";
 import { CalendarClock, CheckCircle2, Circle, Clock, ListChecks, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/tasks/status-pill";
@@ -49,10 +49,13 @@ export function UpcomingTasks({
     return ta < tb ? -1 : ta > tb ? 1 : 0;
   };
 
+  // « À faire aujourd'hui » inclut aussi les tâches en retard (échéance passée,
+  // non faites) afin qu'elles restent visibles. Tri par échéance → les plus
+  // anciennes (les plus en retard) remontent en tête.
   const today = withDate
     .filter((t) => {
-      const d = parseISO(t.due_date!);
-      return isToday(d);
+      const d = startOfDay(parseISO(t.due_date!));
+      return d <= todayStart;
     })
     .sort(byDeadline);
   const week = withDate
@@ -272,6 +275,12 @@ function TaskItem({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(t.title);
 
+  // Retard : nombre de jours entre l'échéance (passée) et aujourd'hui.
+  const daysLate = t.due_date
+    ? differenceInCalendarDays(startOfDay(new Date()), startOfDay(parseISO(t.due_date)))
+    : 0;
+  const late = daysLate > 0;
+
   function commitTitle() {
     const next = draft.trim();
     setEditing(false);
@@ -280,7 +289,12 @@ function TaskItem({
   }
 
   return (
-    <li className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30">
+    <li
+      className={
+        "flex items-center gap-3 px-5 py-3 " +
+        (late ? "bg-red-50 hover:bg-red-100/70" : "hover:bg-muted/30")
+      }
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {editing ? (
           <input
@@ -311,6 +325,14 @@ function TaskItem({
           </button>
         )}
         <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          {late && (
+            <span
+              className="inline-flex items-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white"
+              title={`${daysLate} jour${daysLate > 1 ? "s" : ""} de retard`}
+            >
+              -{daysLate}
+            </span>
+          )}
           {proj && (
             <Link
               href={`/app/projects/${proj.id}`}
