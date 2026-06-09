@@ -22,7 +22,6 @@ import {
   type RoutineFormInput,
 } from "@/lib/queries";
 import { AssigneeAvatar } from "@/components/tasks/assignees-popover";
-import type { RoutineFrequency } from "@/lib/supabase/database.types";
 
 const DAYS = [
   { key: 1, label: "L" },
@@ -123,14 +122,12 @@ function RoutineFormBody({
   const upsert = useUpsertRoutine();
   const [title, setTitle] = useState(routine?.title ?? "");
   const [description, setDescription] = useState(routine?.description ?? "");
-  const [frequency, setFrequency] = useState<RoutineFrequency>(
-    routine?.frequency ?? "daily",
+  // Récurrence : « tous les jours » OU une sélection de jours de la semaine.
+  const [everyDay, setEveryDay] = useState(
+    routine ? routine.frequency === "daily" : true,
   );
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
-    routine?.days_of_week ?? [],
-  );
-  const [dayOfMonth, setDayOfMonth] = useState<number>(
-    routine?.day_of_month ?? 1,
+    routine?.frequency === "weekly" ? routine.days_of_week ?? [] : [],
   );
   const [timeOfDay, setTimeOfDay] = useState(
     (routine?.time_of_day ?? "09:00").slice(0, 5),
@@ -138,17 +135,28 @@ function RoutineFormBody({
   const [active, setActive] = useState(routine?.active ?? true);
   const [assigneeIds, setAssigneeIds] = useState<string[]>(initialAssignees);
 
+  function pickDay(key: number) {
+    setEveryDay(false);
+    setDaysOfWeek((prev) =>
+      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key],
+    );
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (!everyDay && daysOfWeek.length === 0) {
+      toast.error("Sélectionne au moins un jour, ou « Tous les jours ».");
+      return;
+    }
     const payload: RoutineFormInput & { id?: string } = {
       id: routine?.id,
       project_id: projectId,
       title: title.trim(),
       description: description.trim() || null,
-      frequency,
-      days_of_week: frequency === "weekly" ? daysOfWeek : null,
-      day_of_month: frequency === "monthly" ? dayOfMonth : null,
+      frequency: everyDay ? "daily" : "weekly",
+      days_of_week: everyDay ? null : daysOfWeek,
+      day_of_month: null,
       time_of_day: timeOfDay,
       active,
       assignee_ids: assigneeIds,
@@ -185,68 +193,41 @@ function RoutineFormBody({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label>Fréquence</Label>
-        <div className="flex gap-1">
-          {(
-            [
-              { v: "daily", l: "Quotidienne" },
-              { v: "weekly", l: "Hebdomadaire" },
-              { v: "monthly", l: "Mensuelle" },
-            ] as const
-          ).map((opt) => (
-            <Button
-              key={opt.v}
-              type="button"
-              size="sm"
-              variant={frequency === opt.v ? "default" : "outline"}
-              onClick={() => setFrequency(opt.v)}
-            >
-              {opt.l}
-            </Button>
-          ))}
+        <Label>Récurrence</Label>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant={everyDay ? "default" : "outline"}
+            onClick={() => {
+              setEveryDay(true);
+              setDaysOfWeek([]);
+            }}
+          >
+            Tous les jours
+          </Button>
+          <span className="text-xs text-muted-foreground">ou</span>
+          {DAYS.map((d) => {
+            const on = !everyDay && daysOfWeek.includes(d.key);
+            return (
+              <Button
+                key={d.key}
+                type="button"
+                size="sm"
+                variant={on ? "default" : "outline"}
+                onClick={() => pickDay(d.key)}
+                className="w-9 px-0"
+              >
+                {d.label}
+              </Button>
+            );
+          })}
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          Une routine se répète : choisis « Tous les jours » ou les jours de la
+          semaine — pas de date unique.
+        </p>
       </div>
-
-      {frequency === "weekly" && (
-        <div className="flex flex-col gap-1.5">
-          <Label>Jours</Label>
-          <div className="flex flex-wrap gap-1">
-            {DAYS.map((d) => {
-              const on = daysOfWeek.includes(d.key);
-              return (
-                <Button
-                  key={d.key}
-                  type="button"
-                  size="sm"
-                  variant={on ? "default" : "outline"}
-                  onClick={() =>
-                    setDaysOfWeek((prev) =>
-                      on ? prev.filter((x) => x !== d.key) : [...prev, d.key],
-                    )
-                  }
-                  className="w-9 px-0"
-                >
-                  {d.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {frequency === "monthly" && (
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="r-day">Jour du mois (1–31)</Label>
-          <Input
-            id="r-day"
-            type="number"
-            min={1}
-            max={31}
-            value={dayOfMonth}
-            onChange={(e) => setDayOfMonth(Number(e.target.value || 1))}
-          />
-        </div>
-      )}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="r-time">Heure</Label>
