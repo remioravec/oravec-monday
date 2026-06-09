@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   useAllRoutines,
+  useProjects,
   useRoutineCompletions,
   useRoutineCompletionsSince,
   useToggleRoutineCompletion,
@@ -14,6 +15,9 @@ import {
   useDeleteRoutine,
   type Routine,
 } from "@/lib/queries";
+
+type ProjectOpt = { id: string; name: string; color: string | null };
+const NO_PROJECT = "__none__";
 
 const STREAK_GOAL = 30;
 const DAYS = [
@@ -70,6 +74,7 @@ export default function RoutinesPage() {
   const sinceStr = dStr(since);
 
   const { data: routines = [] } = useAllRoutines();
+  const { data: projectsData = [] } = useProjects();
   const { data: doneToday = EMPTY_SET } = useRoutineCompletions(todayStr);
   const { data: range } = useRoutineCompletionsSince(sinceStr);
   const toggle = useToggleRoutineCompletion();
@@ -78,9 +83,14 @@ export default function RoutinesPage() {
 
   const [composer, setComposer] = useState<"new" | Routine | null>(null);
 
+  const projects: ProjectOpt[] = projectsData.map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color,
+  }));
+  const projectsById = new Map(projects.map((p) => [p.id, p]));
+
   const active = routines.filter((r) => r.active);
-  // Dues du jour non faites d'abord, puis faites, puis les autres jours.
-  const sorted = [...active].sort((a, b) => rank(a) - rank(b));
   function rank(r: Routine) {
     const due = isDue(r, now);
     const done = doneToday.has(r.id);
@@ -88,6 +98,21 @@ export default function RoutinesPage() {
     if (due && done) return 1;
     return 2;
   }
+  // Dues du jour non faites d'abord, puis faites, puis les autres jours.
+  const sorted = [...active].sort((a, b) => rank(a) - rank(b));
+
+  // Regroupement par projet (ordre des projets, puis « Sans projet »).
+  const byProject = new Map<string, Routine[]>();
+  for (const r of sorted) {
+    const key = r.project_id && projectsById.has(r.project_id) ? r.project_id : NO_PROJECT;
+    const arr = byProject.get(key) ?? [];
+    arr.push(r);
+    byProject.set(key, arr);
+  }
+  const groupKeys = [
+    ...projects.filter((p) => byProject.has(p.id)).map((p) => p.id),
+    ...(byProject.has(NO_PROJECT) ? [NO_PROJECT] : []),
+  ];
 
   const dueCount = active.filter((r) => isDue(r, now)).length;
   const doneCount = active.filter((r) => isDue(r, now) && doneToday.has(r.id)).length;
@@ -96,7 +121,7 @@ export default function RoutinesPage() {
     try {
       await upsert.mutateAsync({
         id: routine?.id,
-        project_id: routine?.project_id ?? null,
+        project_id: input.projectId,
         title: input.title.trim(),
         description: routine?.description ?? null,
         frequency: input.everyDay ? "daily" : "weekly",
@@ -111,6 +136,37 @@ export default function RoutinesPage() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur");
     }
+  }
+
+  function renderRoutine(r: Routine) {
+    if (composer !== null && typeof composer !== "string" && composer.id === r.id) {
+      return (
+        <li key={r.id}>
+          <RoutineComposer
+            routine={r}
+            projects={projects}
+            onCancel={() => setComposer(null)}
+            onSave={(v) => save(v, r)}
+          />
+        </li>
+      );
+    }
+    return (
+      <RoutineCard
+        key={r.id}
+        routine={r}
+        now={now}
+        done={doneToday.has(r.id)}
+        completions={range?.get(r.id)}
+        onToggle={(done) => toggle.mutate({ routineId: r.id, day: todayStr, done })}
+        onEdit={() => setComposer(r)}
+        onDelete={() => {
+          if (window.confirm(`Supprimer la routine « ${r.title} » ?`)) {
+            del.mutate(r.id, { onError: (e) => toast.error(e.message) });
+          }
+        }}
+      />
+    );
   }
 
   return (
@@ -145,6 +201,7 @@ export default function RoutinesPage() {
 
       {composer === "new" && (
         <RoutineComposer
+          projects={projects}
           onCancel={() => setComposer(null)}
           onSave={(v) => save(v, null)}
         />
@@ -162,38 +219,26 @@ export default function RoutinesPage() {
           </Button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2.5">
-          {sorted.map((r) =>
-            composer !== null && typeof composer !== "string" && composer.id === r.id ? (
-              <li key={r.id}>
-                <RoutineComposer
-                  routine={r}
-                  onCancel={() => setComposer(null)}
-                  onSave={(v) => save(v, r)}
-                />
-              </li>
-            ) : (
-              <RoutineCard
-                key={r.id}
-                routine={r}
-                now={now}
-                done={doneToday.has(r.id)}
-                completions={range?.get(r.id)}
-                onToggle={(done) =>
-                  toggle.mutate({ routineId: r.id, day: todayStr, done })
-                }
-                onEdit={() => setComposer(r)}
-                onDelete={() => {
-                  if (window.confirm(`Supprimer la routine « ${r.title} » ?`)) {
-                    del.mutate(r.id, {
-                      onError: (e) => toast.error(e.message),
-                    });
-                  }
-                }}
-              />
-            ),
-          )}
-        </ul>
+        <div className="flex flex-col gap-6">
+          {groupKeys.map((key) => {
+            const proj = key === NO_PROJECT ? null : projectsById.get(key);
+            return (
+              <section key={key} className="flex flex-col gap-2">
+                <div className="flex items-center gap-1.5 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: proj?.color ?? "#cbd5e1" }}
+                  />
+                  {proj ? proj.name : "Sans projet"}
+                </div>
+                <ul className="flex flex-col gap-2.5">
+                  {(byProject.get(key) ?? []).map((r) => renderRoutine(r))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -356,14 +401,22 @@ function StreakBadge({ streak }: { streak: number }) {
 // ============================================================================
 // Composer (création / édition d'une routine)
 // ============================================================================
-type ComposerValue = { title: string; everyDay: boolean; days: number[]; time: string };
+type ComposerValue = {
+  title: string;
+  everyDay: boolean;
+  days: number[];
+  time: string;
+  projectId: string | null;
+};
 
 function RoutineComposer({
   routine,
+  projects,
   onCancel,
   onSave,
 }: {
   routine?: Routine;
+  projects: ProjectOpt[];
   onCancel: () => void;
   onSave: (v: ComposerValue) => void;
 }) {
@@ -375,6 +428,7 @@ function RoutineComposer({
     routine?.frequency === "weekly" ? routine.days_of_week ?? [] : [],
   );
   const [time, setTime] = useState((routine?.time_of_day ?? "").slice(0, 5));
+  const [projectId, setProjectId] = useState<string>(routine?.project_id ?? NO_PROJECT);
 
   function submit() {
     if (!title.trim()) {
@@ -385,7 +439,13 @@ function RoutineComposer({
       toast.error("Choisis « Tous les jours » ou au moins un jour");
       return;
     }
-    onSave({ title, everyDay, days, time });
+    onSave({
+      title,
+      everyDay,
+      days,
+      time,
+      projectId: projectId === NO_PROJECT ? null : projectId,
+    });
   }
 
   return (
@@ -454,16 +514,33 @@ function RoutineComposer({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-medium text-muted-foreground">
-          Heure (optionnelle)
-        </span>
-        <Input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="h-9 w-32"
-        />
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-muted-foreground">
+            Heure (optionnelle)
+          </span>
+          <Input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="h-9 w-32"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-muted-foreground">Projet</span>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
+          >
+            <option value={NO_PROJECT}>Sans projet</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">
