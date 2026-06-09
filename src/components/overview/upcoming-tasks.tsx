@@ -14,6 +14,21 @@ type Project = { id: string; name: string; color: string };
 // Objectif : tenir chaque routine au moins 30 jours d'affilée.
 const STREAK_GOAL = 30;
 
+/** Regroupe en préservant l'ordre, par projet (null = « sans projet »). */
+function groupByProject<T extends { project_id: string | null }>(items: T[]): T[][] {
+  const order: string[] = [];
+  const map = new Map<string, T[]>();
+  for (const it of items) {
+    const k = it.project_id ?? "__none__";
+    if (!map.has(k)) {
+      map.set(k, []);
+      order.push(k);
+    }
+    map.get(k)!.push(it);
+  }
+  return order.map((k) => map.get(k)!);
+}
+
 export function UpcomingTasks({
   tasks,
   projects,
@@ -146,8 +161,15 @@ function RoutinesColumn({
           Aucune routine prévue aujourd&apos;hui.
         </div>
       ) : (
-        <ul className="divide-y">
-          {routines.map((r) => {
+        <div className="flex flex-col">
+          {groupByProject(routines).map((group, gi) => (
+          <ul
+            key={group[0].id}
+            className={
+              "divide-y divide-border/40" + (gi > 0 ? " border-t border-border" : "")
+            }
+          >
+          {group.map((r) => {
             const proj = r.project_id ? projectsById.get(r.project_id) : undefined;
             const done = completedRoutineIds.has(r.id);
             return (
@@ -202,7 +224,9 @@ function RoutinesColumn({
               </li>
             );
           })}
-        </ul>
+          </ul>
+          ))}
+        </div>
       )}
     </section>
   );
@@ -273,23 +297,33 @@ function TasksColumn({
           {emptyLabel}
         </div>
       ) : (
-        <ul className="divide-y">
-          {tasks.map((t) => {
-            const proj = t.project_id ? projectsById.get(t.project_id) : undefined;
-            const assignees = (assigneesMap.get(t.id) ?? [])
-              .map((uid) => profileById.get(uid))
-              .filter(Boolean) as Profile[];
-            return (
-              <TaskItem
-                key={t.id}
-                task={t}
-                proj={proj}
-                assignees={assignees}
-                onUpdate={onUpdate}
-              />
-            );
-          })}
-        </ul>
+        <div className="flex flex-col">
+          {groupByProject(tasks).map((group, gi) => (
+            <ul
+              key={group[0].id}
+              className={
+                "divide-y divide-border/40" +
+                (gi > 0 ? " border-t border-border" : "")
+              }
+            >
+              {group.map((t) => {
+                const proj = t.project_id ? projectsById.get(t.project_id) : undefined;
+                const assignees = (assigneesMap.get(t.id) ?? [])
+                  .map((uid) => profileById.get(uid))
+                  .filter(Boolean) as Profile[];
+                return (
+                  <TaskItem
+                    key={t.id}
+                    task={t}
+                    proj={proj}
+                    assignees={assignees}
+                    onUpdate={onUpdate}
+                  />
+                );
+              })}
+            </ul>
+          ))}
+        </div>
       )}
     </section>
   );
