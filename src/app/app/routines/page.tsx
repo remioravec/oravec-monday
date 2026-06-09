@@ -43,6 +43,20 @@ function isDue(r: Routine, d: Date) {
   return false;
 }
 
+/** Timestamp de la prochaine occurrence (à partir d'aujourd'hui), pour le tri. */
+function nextOccurrence(r: Routine, now: Date) {
+  const [hh, mm] = (r.time_of_day ?? "23:59").slice(0, 5).split(":").map(Number);
+  for (let off = 0; off <= 31; off++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + off);
+    if (isDue(r, d)) {
+      d.setHours(hh || 0, mm || 0, 0, 0);
+      return d.getTime();
+    }
+  }
+  return now.getTime() + 999 * 86400000; // jamais due dans le mois → tout en bas
+}
+
 function recurrenceSummary(r: Routine) {
   if (r.frequency === "daily") return "Tous les jours";
   if (r.frequency === "weekly") {
@@ -91,28 +105,24 @@ export default function RoutinesPage() {
   const projectsById = new Map(projects.map((p) => [p.id, p]));
 
   const active = routines.filter((r) => r.active);
-  function rank(r: Routine) {
-    const due = isDue(r, now);
-    const done = doneToday.has(r.id);
-    if (due && !done) return 0;
-    if (due && done) return 1;
-    return 2;
-  }
-  // Dues du jour non faites d'abord, puis faites, puis les autres jours.
-  const sorted = [...active].sort((a, b) => rank(a) - rank(b));
 
-  // Regroupement par projet (ordre des projets, puis « Sans projet »).
+  // Regroupement par projet, trié par prochaine occurrence (la plus proche).
   const byProject = new Map<string, Routine[]>();
-  for (const r of sorted) {
+  for (const r of active) {
     const key = r.project_id && projectsById.has(r.project_id) ? r.project_id : NO_PROJECT;
     const arr = byProject.get(key) ?? [];
     arr.push(r);
     byProject.set(key, arr);
   }
-  const groupKeys = [
-    ...projects.filter((p) => byProject.has(p.id)).map((p) => p.id),
-    ...(byProject.has(NO_PROJECT) ? [NO_PROJECT] : []),
-  ];
+  for (const arr of byProject.values()) {
+    arr.sort((a, b) => nextOccurrence(a, now) - nextOccurrence(b, now));
+  }
+  // Projets ordonnés par leur prochaine routine (la plus proche d'abord).
+  const groupKeys = [...byProject.keys()].sort((a, b) => {
+    const na = Math.min(...byProject.get(a)!.map((r) => nextOccurrence(r, now)));
+    const nb = Math.min(...byProject.get(b)!.map((r) => nextOccurrence(r, now)));
+    return na - nb;
+  });
 
   const dueCount = active.filter((r) => isDue(r, now)).length;
   const doneCount = active.filter((r) => isDue(r, now) && doneToday.has(r.id)).length;
