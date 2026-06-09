@@ -55,7 +55,8 @@ export function RoutineFormDialog({
             {routine ? "Modifier la routine" : "Nouvelle routine"}
           </DialogTitle>
           <DialogDescription>
-            Génération automatique chaque jour à 00:00 selon la fréquence.
+            Objectif récurrent cochable : il apparaît dans « Routines du jour »
+            selon sa fréquence.
           </DialogDescription>
         </DialogHeader>
         {open && (
